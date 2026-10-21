@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useApp, useActiveProject } from '../stores/app'
 import { useUi } from '../stores/ui'
 import { glassEnabled } from '../lib/theme'
@@ -9,13 +9,15 @@ import { ConfirmDialog, InputDialog, Toasts } from './dialogs/CommonDialogs'
 import { ProjectDialog } from './dialogs/ProjectDialog'
 import { BrowserView } from '../views/browser/BrowserView'
 import { WelcomeView } from '../views/WelcomeView'
+import { CompareView } from '../views/compare/CompareView'
+import { TerminalView } from '../views/terminal/TerminalView'
+import { SyncQueueView } from '../views/sync/SyncQueueView'
+import { HostForm } from '../views/host/HostForm'
+import { SettingsView } from '../views/SettingsView'
 import { ErrorBoundary } from './ErrorBoundary'
 
-const CompareView = lazy(() => import('../views/compare/CompareView').then((m) => ({ default: m.CompareView })))
-const TerminalView = lazy(() => import('../views/terminal/TerminalView').then((m) => ({ default: m.TerminalView })))
-const SyncQueueView = lazy(() => import('../views/sync/SyncQueueView').then((m) => ({ default: m.SyncQueueView })))
-const HostForm = lazy(() => import('../views/host/HostForm').then((m) => ({ default: m.HostForm })))
-const SettingsView = lazy(() => import('../views/SettingsView').then((m) => ({ default: m.SettingsView })))
+// Views are bundled statically: chunks loaded from disk gain nothing from splitting,
+// and a rebuild would otherwise leave an open window pointing at deleted chunk files.
 
 export function Shell() {
   const view = useUi((s) => s.view)

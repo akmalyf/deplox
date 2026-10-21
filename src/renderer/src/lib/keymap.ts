@@ -12,6 +12,21 @@ function editable(t: EventTarget | null): boolean {
 
 /** One global keydown dispatcher for app shortcuts. */
 export function installKeymap(): () => void {
+  const root = document.documentElement
+  const setHeld = (on: boolean) => root.classList.toggle('mod-held', on)
+  const onModDown = (e: KeyboardEvent) => {
+    if (e.key === (isMac ? 'Meta' : 'Control')) setHeld(true)
+    else if (!(isMac ? e.metaKey : e.ctrlKey)) setHeld(false)
+  }
+  const onModUp = (e: KeyboardEvent) => {
+    if (e.key === (isMac ? 'Meta' : 'Control') || !(isMac ? e.metaKey : e.ctrlKey)) setHeld(false)
+  }
+  const clearHeld = () => setHeld(false)
+  window.addEventListener('keydown', onModDown, true)
+  window.addEventListener('keyup', onModUp, true)
+  window.addEventListener('blur', clearHeld)
+  document.addEventListener('visibilitychange', clearHeld)
+
   const onKey = (e: KeyboardEvent) => {
     const mod = isMac ? e.metaKey : e.ctrlKey
     const ui = useUi.getState()
@@ -62,5 +77,11 @@ export function installKeymap(): () => void {
     }
   }
   window.addEventListener('keydown', onKey)
-  return () => window.removeEventListener('keydown', onKey)
+  return () => {
+    window.removeEventListener('keydown', onKey)
+    window.removeEventListener('keydown', onModDown, true)
+    window.removeEventListener('keyup', onModUp, true)
+    window.removeEventListener('blur', clearHeld)
+    document.removeEventListener('visibilitychange', clearHeld)
+  }
 }

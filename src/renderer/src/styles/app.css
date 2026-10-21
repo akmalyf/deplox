@@ -149,3 +149,8 @@ a:hover { color: var(--accent-hover); }
 
 /* JetBrains Mono is optional; the token falls back to the system mono. */
 .ad-sidebar-body { overflow-x: hidden; }
+
+/* Keyboard shortcut chips appear only while ⌘ (Ctrl elsewhere) is held. */
+.shortcut-hint { display: none; }
+html.mod-held .shortcut-hint { display: inline-flex; }
+html.mod-held .shortcut-badge { display: none; }

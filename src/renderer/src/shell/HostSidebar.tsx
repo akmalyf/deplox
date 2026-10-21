@@ -31,8 +31,20 @@ export function HostSidebar() {
     return t ? hosts.filter((h) => h.name.toLowerCase().includes(t) || h.host.toLowerCase().includes(t)) : hosts
   }, [hosts, q])
 
-  const nav = (v: View, label: string, icon: string, trailing: string) => (
-    <NavItem icon={icon} selected={view === v} trailing={trailing} onClick={() => setView(v)}>
+  // Shortcut chips only show while the modifier key is held; a badge (pending count) stays visible otherwise.
+  const nav = (v: View, label: string, icon: string, shortcut: string, badge?: string) => (
+    <NavItem
+      icon={icon}
+      selected={view === v}
+      title={`${label} (${shortcut})`}
+      trailing={
+        <>
+          <Kbd className="shortcut-hint">{shortcut}</Kbd>
+          {badge ? <Kbd className="shortcut-badge">{badge}</Kbd> : null}
+        </>
+      }
+      onClick={() => setView(v)}
+    >
       {label}
     </NavItem>
   )
@@ -67,7 +79,7 @@ export function HostSidebar() {
         {nav('browser', 'Remote Browser', 'cloud', `${MOD}1`)}
         {nav('compare', 'Compare', 'copy', `${MOD}2`)}
         {nav('terminal', 'SSH Sessions', 'terminal', `${MOD}3`)}
-        {nav('sync', 'Sync Queue', 'git-branch', pending ? String(pending) : `${MOD}4`)}
+        {nav('sync', 'Sync Queue', 'git-branch', `${MOD}4`, pending ? String(pending) : undefined)}
       </NavGroup>
       {project ? (
         <div>

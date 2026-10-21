@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "paths": { "@shared/*": ["./src/shared/*"] }
+  },
+  "include": ["electron.vite.config.ts", "vitest.config.ts", "vitest.int.config.ts", "src/main/**/*", "src/preload/**/*", "src/shared/**/*"]
+}

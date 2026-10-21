@@ -1,0 +1,15 @@
+# Optional third-party test servers (the bundled dev/test-server.mjs covers SFTP + SSH).
+# docker compose -f dev/docker-compose.yml up
+services:
+  sftp:
+    image: atmoz/sftp:alpine
+    command: foo:pass:1001
+    ports: ['2223:22']
+  ftp:
+    image: delfer/alpine-ftp-server
+    environment:
+      USERS: 'foo|pass'
+      ADDRESS: 127.0.0.1
+      MIN_PORT: 21100
+      MAX_PORT: 21110
+    ports: ['2121:21', '21100-21110:21100-21110']

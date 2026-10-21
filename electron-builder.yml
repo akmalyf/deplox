@@ -1,0 +1,19 @@
+appId: id.ebelanja.deplox
+productName: Deplox
+directories:
+  buildResources: resources
+  output: release/${version}
+files:
+  - out/**
+  - package.json
+asarUnpack:
+  - '**/node_modules/node-pty/**'
+npmRebuild: false
+mac:
+  category: public.app-category.developer-tools
+  target: [dmg, zip]
+win:
+  target: [nsis]
+linux:
+  target: [AppImage, deb]
+  category: Development

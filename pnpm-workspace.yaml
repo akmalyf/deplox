@@ -1,0 +1,9 @@
+nodeLinker: hoisted
+shamefullyHoist: true
+allowBuilds:
+  cpu-features: false
+  ssh2: false
+  node-pty: true
+  electron: true
+  esbuild: true
+  electron-winstaller: false

@@ -61,7 +61,8 @@ function DiffRows({ rows, lang, onHunk }: { rows: DiffRow[]; lang: Lang; onHunk:
   const cur = hunks[cursor]
   // Ignore » / « clicks right after the diff appears: the click that opened Compare must not land on them.
   const [armedAt, setArmedAt] = useState(() => Date.now() + 700)
-  useEffect(() => setArmedAt(Date.now() + 700), [rows])
+  const pairKey = useCompare((s) => (s.pair ? s.pair.localPath + '|' + s.pair.remotePath : ''))
+  useEffect(() => setArmedAt(Date.now() + 700), [pairKey])
   const hunk = (id: number, side: 'remote' | 'local') => {
     if (Date.now() < armedAt) return
     onHunk(id, side)
@@ -75,12 +76,15 @@ function DiffRows({ rows, lang, onHunk }: { rows: DiffRow[]; lang: Lang; onHunk:
     setRange((r) => (r.from === from && r.to === to ? r : { from, to }))
   }
   useEffect(update, [rows.length])
+  // Scroll only when the user moves between differences, not when the diff is rebuilt after a merge.
+  const nav = useCompare((s) => s.navTick)
   useEffect(() => {
     const el = ref.current
-    if (!el || !cur) return
-    const top = cur.start * ROW
+    const h = useCompare.getState().hunks[useCompare.getState().cursor]
+    if (!el || !h || !nav) return
+    const top = h.start * ROW
     if (top < el.scrollTop || top > el.scrollTop + el.clientHeight - ROW * 3) el.scrollTo({ top: Math.max(0, top - el.clientHeight / 3) })
-  }, [cur])
+  }, [nav])
 
   return (
     <div ref={ref} onScroll={update} style={{ flex: '1 1 auto', minHeight: 0, overflow: 'auto', fontFamily: 'var(--font-mono)', fontSize: 14, lineHeight: '22px', fontVariantLigatures: 'none', color: 'var(--code-text)' }}>

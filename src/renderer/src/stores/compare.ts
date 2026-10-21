@@ -24,9 +24,12 @@ interface CompareStore {
   showPreview: boolean
   previewSide: 'remote' | 'local'
   cursor: number
+  /** Bumped on explicit navigation (next/prev, hunk select) so the view knows when to scroll. */
+  navTick: number
   writing: boolean
-  open: (p: ComparePair) => Promise<void>
+  open: (p: ComparePair, quiet?: boolean) => Promise<void>
   reload: () => Promise<void>
+  applyWritten: (target: 'remote' | 'local', text: string, written: { mtime: number; size: number }) => void
   close: () => void
   toggleRow: (id: string) => void
   selectHunk: (hunkId: number, side: 'remote' | 'local') => void
@@ -58,14 +61,26 @@ export const useCompare = create<CompareStore>((set, get) => ({
   showPreview: true,
   previewSide: 'remote',
   cursor: 0,
+  navTick: 0,
   writing: false,
 
-  open: async (pair) => {
-    set({ pair, loading: true, error: null, selected: new Set(), cursor: 0 })
+  open: async (pair, quiet = false) => {
+    // A quiet reload keeps the current diff on screen (and its scroll) until fresh data arrives.
+    const keep = quiet && !!get().local && !!get().remote
+    set(keep ? { pair } : { pair, loading: true, error: null, selected: new Set(), cursor: 0 })
     try {
       const r = await invoke('compare:load', pair)
       if (get().pair !== pair) return
-      set({ local: r.local, remote: r.remote, remoteNewer: r.remoteNewerThanSnapshot, loading: false, ...rebuild(r.local, r.remote, get().ignoreWs) })
+      const next = rebuild(r.local, r.remote, get().ignoreWs)
+      set({
+        local: r.local,
+        remote: r.remote,
+        remoteNewer: r.remoteNewerThanSnapshot,
+        loading: false,
+        error: null,
+        ...next,
+        ...(keep ? { cursor: Math.min(get().cursor, Math.max(0, next.hunks.length - 1)), selected: new Set() } : {})
+      })
     } catch (e) {
       if (get().pair !== pair) return
       set({ loading: false, error: errorText(e), local: null, remote: null, rows: [], hunks: [] })
@@ -74,7 +89,19 @@ export const useCompare = create<CompareStore>((set, get) => ({
 
   reload: async () => {
     const p = get().pair
-    if (p) await get().open({ ...p })
+    if (p) await get().open({ ...p }, true)
+  },
+
+  applyWritten: (target, text, written) => {
+    const { local, remote, ignoreWs, cursor } = get()
+    if (!local || !remote) return
+    const sp = splitText(text)
+    const updated: CompareSide = { text, eol: sp.eol, bom: sp.bom, trailingNewline: sp.trailingNewline, mtime: written.mtime, size: written.size, exists: true }
+    const nl = target === 'local' ? updated : local
+    const nr = target === 'remote' ? updated : remote
+    const next = rebuild(nl, nr, ignoreWs)
+    // Stay on the same position: the next difference slides into the applied one's place.
+    set({ local: nl, remote: nr, ...next, selected: new Set(), cursor: Math.min(cursor, Math.max(0, next.hunks.length - 1)) })
   },
 
   close: () => set({ pair: null, local: null, remote: null, rows: [], hunks: [], error: null }),
@@ -108,7 +135,7 @@ export const useCompare = create<CompareStore>((set, get) => ({
 
   setShowPreview: (showPreview) => set({ showPreview }),
   setPreviewSide: (previewSide) => set({ previewSide }),
-  setCursor: (cursor) => set({ cursor: Math.max(0, Math.min(get().hunks.length - 1, cursor)) }),
+  setCursor: (cursor) => set({ cursor: Math.max(0, Math.min(get().hunks.length - 1, cursor)), navTick: get().navTick + 1 }),
 
   apply: async (target, onlyHunk) => {
     const { pair, local, remote, rows, hunks } = get()
@@ -135,15 +162,15 @@ export const useCompare = create<CompareStore>((set, get) => ({
             label: 'Undo',
             run: () =>
               void write(previous, written.mtime, written.size)
-                .then(() => {
+                .then((w) => {
+                  get().applyWritten(target, previous, w)
                   toast('Change undone')
-                  void get().reload()
                 })
                 .catch((e) => toast(`Undo failed: ${errorText(e)}`, 'danger'))
           }
         : undefined)
-      set({ writing: false, selected: new Set() })
-      await get().reload()
+      set({ writing: false })
+      get().applyWritten(target, text, written)
     } catch (e) {
       set({ writing: false })
       if (errorCode(e) === 'ESTALE') toast(`${errorText(e)}. Reload to see the latest version.`, 'danger', { label: 'Reload', run: () => void get().reload() })

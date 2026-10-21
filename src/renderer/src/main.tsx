@@ -15,6 +15,8 @@ import { useSync } from './stores/sync'
 import { installKeymap } from './lib/keymap'
 import { applyTheme } from './lib/theme'
 
+// Platform class for chrome that depends on native window controls.
+document.documentElement.classList.toggle('mac', window.deplox.platform === 'darwin')
 bindEvents()
 installKeymap()
 

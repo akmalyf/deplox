@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { Icon, Kbd, MenuItem, MenuPopover, StatusDot } from '@/ds'
+import { Button, Icon, Kbd, MenuItem, MenuPopover, StatusDot } from '@/ds'
 import type { Host, HostConn } from '@shared/types'
 import { initials } from '@shared/format'
 import { useApp, useActiveHost, useActiveProject, useConn, useProjectHosts } from '../stores/app'
@@ -13,7 +13,18 @@ export function Sep() {
 }
 
 export function Header({ children }: { children?: ReactNode }) {
-  return <header className="app-header drag">{children}</header>
+  const collapsed = useUi((s) => s.sidebarCollapsed)
+  const toggle = useUi((s) => s.toggleSidebar)
+  return (
+    <header className="app-header drag">
+      {collapsed ? (
+        <Button variant="ghost" size="sm" icon="sidebar" iconOnly onClick={toggle} title={`Show sidebar (${MOD}B)`}>
+          Show sidebar
+        </Button>
+      ) : null}
+      {children}
+    </header>
+  )
 }
 
 export function ProjectSwitch() {

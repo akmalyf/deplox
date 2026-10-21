@@ -44,10 +44,20 @@ export function BrowserView() {
       autoConnected.add(host.id)
       void connectHost(host.id)
     }
-    if (conn.state === 'connected' && !remoteRoot) {
-      void invoke('remote:realpath', { hostId: host.id, path: '.' }).then((p) => setRoot('remote', p)).catch(() => undefined)
-    } else if (conn.state === 'connected' && remoteRoot && !useBrowser.getState().remote.entries[remoteRoot] && !useBrowser.getState().remote.loading[remoteRoot]) {
-      void useBrowser.getState().load('remote', remoteRoot)
+    if (conn.state !== 'connected') return
+    // Read the live store: the root from this render can be stale right after setHost().
+    const live = useBrowser.getState()
+    const root = live.hostId === host.id ? live.remote.root : ''
+    if (!root && !host.mappings.some((m) => m.remote)) {
+      // No deployment path: start in the remote home folder.
+      void invoke('remote:realpath', { hostId: host.id, path: '.' })
+        .then((p) => {
+          const now = useBrowser.getState()
+          if (now.hostId === host.id && !now.remote.root) setRoot('remote', p)
+        })
+        .catch(() => undefined)
+    } else if (root && !live.remote.entries[root] && !live.remote.loading[root]) {
+      void live.load('remote', root)
     }
   }, [host, conn.state, conn.error, remoteRoot, setRoot])
 

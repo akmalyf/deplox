@@ -154,3 +154,6 @@ a:hover { color: var(--accent-hover); }
 .shortcut-hint { display: none; }
 html.mod-held .shortcut-hint { display: inline-flex; }
 html.mod-held .shortcut-badge { display: none; }
+
+/* Sidebar hidden: keep the header clear of the macOS traffic lights (positioned at x 16, ~52px wide). */
+html.mac .sidebar-collapsed .app-header { padding-left: 80px; }

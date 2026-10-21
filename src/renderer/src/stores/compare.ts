@@ -120,14 +120,28 @@ export const useCompare = create<CompareStore>((set, get) => ({
     const side = target === 'remote' ? remote : local
     const text = joinText(lines, side)
     set({ writing: true })
+    const write = (t: string, expectedMtime: number, expectedSize: number) =>
+      target === 'remote'
+        ? invoke('compare:writeRemote', { hostId: pair.hostId, path: pair.remotePath, otherPath: pair.localPath, text: t, expectedMtime, expectedSize })
+        : invoke('compare:writeLocal', { hostId: pair.hostId, path: pair.localPath, otherPath: pair.remotePath, text: t, expectedMtime, expectedSize })
     try {
-      if (target === 'remote') {
-        await invoke('compare:writeRemote', { hostId: pair.hostId, path: pair.remotePath, otherPath: pair.localPath, text, expectedMtime: remote.mtime, expectedSize: remote.size })
-      } else {
-        await invoke('compare:writeLocal', { hostId: pair.hostId, path: pair.localPath, otherPath: pair.remotePath, text, expectedMtime: local.mtime, expectedSize: local.size })
-      }
+      const written = await write(text, side.mtime, side.size)
       const n = [...selected].filter((id) => rows.find((r) => r.id === id)?.kind).length
-      toast(`${n} line${n === 1 ? '' : 's'} ${target === 'remote' ? 'uploaded to the server' : 'taken into your local file'}`, 'success')
+      // The previous content stays in memory so a mistaken click can be reverted.
+      const previous = side.text
+      const existed = side.exists
+      toast(`${n} line${n === 1 ? '' : 's'} ${target === 'remote' ? 'uploaded to the server' : 'taken into your local file'}`, 'success', existed
+        ? {
+            label: 'Undo',
+            run: () =>
+              void write(previous, written.mtime, written.size)
+                .then(() => {
+                  toast('Change undone')
+                  void get().reload()
+                })
+                .catch((e) => toast(`Undo failed: ${errorText(e)}`, 'danger'))
+          }
+        : undefined)
       set({ writing: false, selected: new Set() })
       await get().reload()
     } catch (e) {

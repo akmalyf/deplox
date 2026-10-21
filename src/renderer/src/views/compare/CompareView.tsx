@@ -59,6 +59,13 @@ function DiffRows({ rows, lang, onHunk }: { rows: DiffRow[]; lang: Lang; onHunk:
   const hunks = useCompare((s) => s.hunks)
   const writing = useCompare((s) => s.writing)
   const cur = hunks[cursor]
+  // Ignore » / « clicks right after the diff appears: the click that opened Compare must not land on them.
+  const [armedAt, setArmedAt] = useState(() => Date.now() + 700)
+  useEffect(() => setArmedAt(Date.now() + 700), [rows])
+  const hunk = (id: number, side: 'remote' | 'local') => {
+    if (Date.now() < armedAt) return
+    onHunk(id, side)
+  }
 
   const update = () => {
     const el = ref.current
@@ -93,7 +100,7 @@ function DiffRows({ rows, lang, onHunk }: { rows: DiffRow[]; lang: Lang; onHunk:
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span style={{ width: 22, display: 'inline-flex', justifyContent: 'center' }}>
                       {r.hunkStart ? (
-                        <button type="button" className="line-act" disabled={writing} aria-label={`Upload change ${r.hunkId} to remote`} title="Upload this change to remote" onClick={() => onHunk(r.hunkId!, 'remote')}>
+                        <button type="button" className="line-act" disabled={writing} aria-label={`Upload change ${r.hunkId} to remote`} title="Upload this change to remote" onClick={() => hunk(r.hunkId!, 'remote')}>
                           »
                         </button>
                       ) : null}
@@ -107,7 +114,7 @@ function DiffRows({ rows, lang, onHunk }: { rows: DiffRow[]; lang: Lang; onHunk:
                     </span>
                     <span style={{ width: 22, display: 'inline-flex', justifyContent: 'center' }}>
                       {r.hunkStart ? (
-                        <button type="button" className="line-act" disabled={writing} aria-label={`Take change ${r.hunkId} from remote`} title="Take this change from remote" onClick={() => onHunk(r.hunkId!, 'local')}>
+                        <button type="button" className="line-act" disabled={writing} aria-label={`Take change ${r.hunkId} from remote`} title="Take this change from remote" onClick={() => hunk(r.hunkId!, 'local')}>
                           «
                         </button>
                       ) : null}

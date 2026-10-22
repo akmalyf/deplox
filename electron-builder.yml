@@ -11,6 +11,10 @@ asarUnpack:
 npmRebuild: false
 mac:
   category: public.app-category.developer-tools
+  # Ad-hoc signature until there is a Developer ID: Apple Silicon refuses unsigned apps as "damaged".
+  identity: '-'
+  # Hardened runtime only matters for notarization, and with an ad-hoc identity it blocks loading node-pty.
+  hardenedRuntime: false
   target: [dmg, zip]
 win:
   target: [nsis]

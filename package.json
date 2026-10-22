@@ -5,6 +5,11 @@
   "description": "FTP/SFTP remote host client with per-line compare and SSH terminal",
   "author": "Akmal",
   "license": "MIT",
+  "homepage": "https://github.com/akmalyf/deplox",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/akmalyf/deplox.git"
+  },
   "private": true,
   "type": "module",
   "main": "./out/main/index.js",

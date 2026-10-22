@@ -17,3 +17,5 @@ win:
 linux:
   target: [AppImage, deb]
   category: Development
+  # .deb needs a maintainer with an email.
+  maintainer: Akmal <akmalyasykur@gmail.com>

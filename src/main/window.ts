@@ -44,6 +44,11 @@ function loadRenderer(win: BrowserWindow, hash?: string): void {
 
 let mainWindow: BrowserWindow | null = null
 
+/** Windows/Linux caption buttons: transparent so the header shows through, glyphs in the theme's muted ink. */
+function titleBarOverlay(): Electron.TitleBarOverlay {
+  return { color: '#00000000', symbolColor: nativeTheme.shouldUseDarkColors ? '#b8b8b9' : '#4b4b4b', height: 44 }
+}
+
 /** The main app window, if it is open (Sync windows don't count). */
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow && !mainWindow.isDestroyed() ? mainWindow : null
@@ -60,7 +65,7 @@ export function createWindow(settings: Settings): BrowserWindow {
     title: 'Deplox',
     backgroundColor: glass ? '#00000000' : '#141415',
     titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
-    titleBarOverlay: isMac ? undefined : { color: '#141415', symbolColor: '#b8b8b9', height: 44 },
+    titleBarOverlay: isMac ? undefined : titleBarOverlay(),
     trafficLightPosition: { x: 16, y: 16 },
     vibrancy: glass ? 'sidebar' : undefined,
     visualEffectState: 'followWindow',
@@ -71,7 +76,13 @@ export function createWindow(settings: Settings): BrowserWindow {
   guard(win)
   loadRenderer(win)
   mainWindow = win
+  // Follow theme changes (Settings or the OS) with the caption button glyphs.
+  const onTheme = () => {
+    if (!win.isDestroyed()) win.setTitleBarOverlay(titleBarOverlay())
+  }
+  if (!isMac) nativeTheme.on('updated', onTheme)
   win.on('closed', () => {
+    nativeTheme.off('updated', onTheme)
     if (mainWindow === win) mainWindow = null
   })
   return win

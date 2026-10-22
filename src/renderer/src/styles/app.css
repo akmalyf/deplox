@@ -24,6 +24,10 @@ a:hover { color: var(--accent-hover); }
 /* Full screen has no traffic lights: the toggle moves to the left edge. */
 html.fullscreen .sb-top-mac { padding-left: 12px; }
 html.fullscreen .sb-top .spacer { order: 1; }
+/* Windows/Linux: caption buttons are drawn over the top-right of the window (Window Controls Overlay), so the toggle
+   lives on the left. titlebar-area-x is non-zero only when a Linux desktop puts the buttons on the left. */
+html:not(.mac) .sb-top { padding-left: calc(env(titlebar-area-x, 0px) + 12px); }
+html:not(.mac) .sb-top .spacer { order: 1; }
 /* Collapse slides the sidebar off the left edge while the main panel grows into its place.
    visibility flips after the slide out (and at once on the way in) so a hidden sidebar takes no focus. */
 .ad-sidebar { transition: margin-left 220ms cubic-bezier(0.2, 0, 0, 1), visibility 0s; }
@@ -222,6 +226,10 @@ html.mod-held .shortcut-badge { display: none; }
 
 /* Sidebar hidden: keep the header clear of the macOS traffic lights (x 16, ~52px wide) with a clear gap; none in full screen. */
 html.mac:not(.fullscreen) .sidebar-collapsed .app-header { padding-left: 96px; }
+/* Windows/Linux: end the header (Search, Sync All) before the caption buttons; the env() values track their width
+   and go to zero in full screen. The header runs to the window's right edge, so 100vw is its right side. */
+html:not(.mac) .app-header { padding-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 12px); }
+html:not(.mac) .sidebar-collapsed .app-header { padding-left: calc(env(titlebar-area-x, 0px) + 12px); }
 
 /* Drag handles between resizable panels: invisible until hovered, focused or dragged */
 .ad-splitter { flex: 0 0 auto; position: relative; touch-action: none; }

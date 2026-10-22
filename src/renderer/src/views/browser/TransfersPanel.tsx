@@ -118,6 +118,7 @@ function GroupRow({ g, speed }: { g: TransferGroup; speed: number }) {
 
 export function TransfersPanel() {
   const open = useBrowser((s) => s.transfersOpen)
+  const height = useBrowser((s) => s.transfersHeight)
   const tab = useBrowser((s) => s.transfersTab)
   const setOpen = useBrowser((s) => s.setTransfersOpen)
   const setTab = useBrowser((s) => s.setTransfersTab)
@@ -137,7 +138,7 @@ export function TransfersPanel() {
   const summary = [active && `${active} active`, queued && `${queued} queued`, paused && `${paused} paused`, speed && formatSpeed(speed)].filter(Boolean).join(' · ') || 'Idle'
 
   return (
-    <section aria-label="Transfers" style={{ flex: '0 0 auto', height: open ? 196 : 37, margin: '0 12px 12px', background: 'var(--bg-card)', borderRadius: 10, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <section aria-label="Transfers" style={{ flex: '0 0 auto', height: open ? height : 37, margin: '0 12px 12px', background: 'var(--bg-card)', borderRadius: 10, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div role="tablist" style={{ height: 36, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 4, padding: '0 8px', borderBottom: '1px solid var(--line)' }}>
         <PaneTab icon="git-branch" active={tab === 'transfers'} closable={false} onSelect={() => (setTab('transfers'), setOpen(true))}>
           Transfers

@@ -201,3 +201,16 @@ html.mod-held .shortcut-badge { display: none; }
 
 /* Sidebar hidden: keep the header clear of the macOS traffic lights (positioned at x 16, ~52px wide). */
 html.mac .sidebar-collapsed .app-header { padding-left: 80px; }
+
+/* Drag handles between resizable panels: invisible until hovered, focused or dragged */
+.ad-splitter { flex: 0 0 auto; position: relative; touch-action: none; }
+.ad-splitter::after { content: ''; position: absolute; border-radius: 2px; background: transparent; transition: background 120ms; }
+.ad-splitter-vertical { width: 8px; cursor: col-resize; }
+.ad-splitter-vertical::after { top: 0; bottom: 0; left: 3px; width: 2px; }
+.ad-splitter-horizontal { height: 8px; cursor: row-resize; }
+.ad-splitter-horizontal::after { left: 0; right: 0; top: 3px; height: 2px; }
+.ad-splitter:hover::after, .ad-splitter:focus-visible::after, body.resizing-col .ad-splitter-vertical::after, body.resizing-row .ad-splitter-horizontal::after { background: var(--accent); }
+.ad-splitter:focus-visible { outline: none; }
+body.resizing-col, body.resizing-col * { cursor: col-resize !important; user-select: none; }
+body.resizing-row, body.resizing-row * { cursor: row-resize !important; user-select: none; }
+.transfers-split { margin: 0 12px; }

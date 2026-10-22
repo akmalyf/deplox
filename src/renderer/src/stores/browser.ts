@@ -46,6 +46,12 @@ interface BrowserStore {
   syncScroll: boolean
   transfersOpen: boolean
   transfersTab: 'transfers' | 'log'
+  /** Local pane's share of the two-pane width (0..1). */
+  paneSplit: number
+  /** Expanded Transfers panel height in px. */
+  transfersHeight: number
+  setPaneSplit: (r: number) => void
+  setTransfersHeight: (h: number) => void
   setHost: (hostId: string | null, localRoot: string, remoteRoot: string) => void
   setRoot: (side: Side, root: string) => void
   load: (side: Side, dir: string, quiet?: boolean) => Promise<void>
@@ -86,6 +92,32 @@ export function counterpart(from: Side, path: string, localRoot: string, remoteR
   return rel ? `${normLocal(localRoot)}/${rel}` : localRoot
 }
 
+export const DEFAULT_PANE_SPLIT = 0.5
+export const DEFAULT_TRANSFERS_HEIGHT = 196
+const LAYOUT_KEY = 'deplox.browser.layout'
+
+// Pane sizes are a per-machine convenience, so browser storage is enough; it may be unavailable.
+function loadLayout(): { paneSplit: number; transfersHeight: number } {
+  const def = { paneSplit: DEFAULT_PANE_SPLIT, transfersHeight: DEFAULT_TRANSFERS_HEIGHT }
+  try {
+    const v = JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? 'null') as Partial<typeof def> | null
+    return {
+      paneSplit: typeof v?.paneSplit === 'number' ? v.paneSplit : def.paneSplit,
+      transfersHeight: typeof v?.transfersHeight === 'number' ? v.transfersHeight : def.transfersHeight
+    }
+  } catch {
+    return def
+  }
+}
+
+function saveLayout(layout: { paneSplit: number; transfersHeight: number }): void {
+  try {
+    localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout))
+  } catch {
+    // Sizes just reset next launch.
+  }
+}
+
 export const useBrowser = create<BrowserStore>((set, get) => ({
   hostId: null,
   local: emptyPane(),
@@ -95,6 +127,7 @@ export const useBrowser = create<BrowserStore>((set, get) => ({
   syncScroll: true,
   transfersOpen: true,
   transfersTab: 'transfers',
+  ...loadLayout(),
 
   setHost: (hostId, localRoot, remoteRoot) => {
     const st = get()
@@ -185,6 +218,16 @@ export const useBrowser = create<BrowserStore>((set, get) => ({
   setSyncScroll: (syncScroll) => set({ syncScroll }),
   setTransfersOpen: (transfersOpen) => set({ transfersOpen }),
   setTransfersTab: (transfersTab) => set({ transfersTab }),
+  setPaneSplit: (r) => {
+    const paneSplit = Math.min(0.85, Math.max(0.15, r))
+    set({ paneSplit })
+    saveLayout({ paneSplit, transfersHeight: get().transfersHeight })
+  },
+  setTransfersHeight: (h) => {
+    const transfersHeight = Math.round(Math.max(80, h))
+    set({ transfersHeight })
+    saveLayout({ paneSplit: get().paneSplit, transfersHeight })
+  },
   markStale: (stale) => set((st) => ({ remote: { ...st.remote, stale } }))
 }))
 

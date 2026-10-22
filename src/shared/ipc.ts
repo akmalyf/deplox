@@ -117,6 +117,8 @@ export interface EventMap {
   'sync:items': { items: SyncItem[] }
   'app:toast': { text: string; tone?: 'neutral' | 'danger' | 'success' }
   'app:openCompare': { hostId: string; localPath: string; remotePath: string }
+  /** Sent only to the window that entered or left native full screen. */
+  'window:fullscreen': { fullScreen: boolean }
 }
 
 export type InvokeChannel = keyof InvokeMap
@@ -144,7 +146,7 @@ export const EVENT_CHANNELS = [
   'conn:state', 'prompt:open', 'prompt:cancel', 'store:changed',
   'transfers:update', 'transfers:progress', 'transfers:log',
   'terminal:data', 'terminal:exit', 'terminal:info',
-  'sync:items', 'app:toast', 'app:openCompare'
+  'sync:items', 'app:toast', 'app:openCompare', 'window:fullscreen'
 ] as const satisfies readonly EventChannel[]
 
 /** Errors crossing IPC are serialized as `[CODE] message`. */

@@ -1,6 +1,7 @@
 import { BrowserWindow, nativeTheme, shell } from 'electron'
 import { join } from 'node:path'
 import type { Settings, SyncWindowRequest } from '@shared/types'
+import type { EventMap } from '@shared/ipc'
 
 const isMac = process.platform === 'darwin'
 
@@ -26,6 +27,14 @@ function guard(win: BrowserWindow): void {
   win.webContents.on('will-navigate', (e, url) => {
     if (!url.startsWith('http://localhost') && !url.startsWith('file://')) e.preventDefault()
   })
+  // Full screen hides the macOS traffic lights, so the renderer drops the room it keeps for them.
+  // Also sent on every load, so a reload or a window restored straight into full screen starts right.
+  const sendFullScreen = () => {
+    if (!win.isDestroyed()) win.webContents.send('window:fullscreen', { fullScreen: win.isFullScreen() } satisfies EventMap['window:fullscreen'])
+  }
+  win.on('enter-full-screen', sendFullScreen)
+  win.on('leave-full-screen', sendFullScreen)
+  win.webContents.on('did-finish-load', sendFullScreen)
 }
 
 function loadRenderer(win: BrowserWindow, hash?: string): void {

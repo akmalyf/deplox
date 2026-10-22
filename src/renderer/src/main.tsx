@@ -18,6 +18,7 @@ import { syncRoute } from './lib/route'
 
 // Platform class for chrome that depends on native window controls.
 document.documentElement.classList.toggle('mac', window.deplox.platform === 'darwin')
+window.deplox.on('window:fullscreen', ({ fullScreen }) => document.documentElement.classList.toggle('fullscreen', fullScreen))
 bindEvents()
 // App shortcuts drive the main window's views; a Sync window has its own keys.
 if (!syncRoute) installKeymap()

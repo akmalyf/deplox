@@ -9,7 +9,7 @@ import { invoke } from '../lib/ipc'
 import { MOD } from '../lib/ipc'
 
 export function Sep() {
-  return <Icon name="chevron-right" style={{ color: 'var(--ink-subtle)', flex: '0 0 auto' }} />
+  return <Icon name="chevron-right" className="crumb-sep" />
 }
 
 export function Header({ children }: { children?: ReactNode }) {

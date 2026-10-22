@@ -17,13 +17,25 @@ export function Header({ children }: { children?: ReactNode }) {
   const toggle = useUi((s) => s.toggleSidebar)
   return (
     <header className="app-header drag">
-      {collapsed ? (
+      <HeaderReveal shown={collapsed}>
         <Button variant="ghost" size="sm" icon="sidebar" iconOnly onClick={toggle} title={`Show sidebar (${MOD}B)`}>
           Show sidebar
         </Button>
-      ) : null}
+      </HeaderReveal>
       {children}
     </header>
+  )
+}
+
+/**
+ * Header items that stand in for the sidebar while it is hidden. They stay mounted and grow/fade in step with
+ * the sidebar's slide (see .header-reveal), instead of popping in and out.
+ */
+function HeaderReveal({ shown, children }: { shown: boolean; children: ReactNode }) {
+  return (
+    <div className="header-reveal" aria-hidden={!shown} inert={!shown}>
+      <div>{children}</div>
+    </div>
   )
 }
 
@@ -31,12 +43,12 @@ export function Header({ children }: { children?: ReactNode }) {
 export function ProjectCrumb() {
   const collapsed = useUi((s) => s.sidebarCollapsed)
   const project = useActiveProject()
-  if (!collapsed || !project) return null
+  if (!project) return null
   return (
-    <>
+    <HeaderReveal shown={collapsed}>
       <ProjectSwitch />
       <Sep />
-    </>
+    </HeaderReveal>
   )
 }
 

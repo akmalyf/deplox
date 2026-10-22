@@ -3,6 +3,8 @@ productName: Deplox
 directories:
   buildResources: resources
   output: release/${version}
+# deplox-<version>-<os>-<arch>.<ext> for every installer (os: mac | win | linux).
+artifactName: ${name}-${version}-${os}-${arch}.${ext}
 files:
   - out/**
   - package.json

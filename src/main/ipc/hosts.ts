@@ -5,6 +5,7 @@ import type { Services } from '../services'
 import type { StoredHost } from '../store/schema'
 import { secretRef } from '../store/secrets'
 import { toRemoteFsError } from '../remote/errors'
+import type { RemoteFs } from '../remote/RemoteFs'
 
 function toStored(h: Host): StoredHost {
   const { hasSecret: _hasSecret, ...auth } = h.auth
@@ -22,7 +23,21 @@ function toStored(h: Host): StoredHost {
 
 const CONNECTION_KEYS: (keyof StoredHost)[] = ['protocol', 'host', 'port', 'username']
 
+/** Idle browse connections close on their own after this long. */
+const BROWSE_IDLE_MS = 120_000
+
 export function registerHosts(s: Services): void {
+  // Folder browsing from the host form runs on its own throwaway connection (the host may not be
+  // saved yet), kept per form session so walking down a tree doesn't reconnect on every click.
+  const browsers = new Map<string, { fs: Promise<RemoteFs>; timer?: NodeJS.Timeout }>()
+  const endBrowse = (session: string) => {
+    const b = browsers.get(session)
+    if (!b) return
+    clearTimeout(b.timer)
+    browsers.delete(session)
+    b.fs.then((fs) => fs.close()).catch(() => {})
+  }
+
   handle('hosts:save', async ({ host, secret }) => {
     if (!host.host.trim()) throw new Error('[EUNKNOWN] Host is required')
     const stored = toStored(host)
@@ -84,6 +99,32 @@ export function registerHosts(s: Services): void {
       return { ok: false, error: toRemoteFsError(e).detail }
     }
   })
+
+  handle('hosts:browse', async ({ session, host, secret, path }) => {
+    let b = browsers.get(session)
+    if (!b) {
+      const stored = toStored(host)
+      const kind = stored.auth.method === 'key' ? 'passphrase' : 'password'
+      const value = secret?.value || s.secrets.get(secretRef(stored.id, kind))
+      b = { fs: s.conns.openTemp(stored, value).then((r) => r.fs) }
+      browsers.set(session, b)
+    }
+    clearTimeout(b.timer)
+    b.timer = setTimeout(() => endBrowse(session), BROWSE_IDLE_MS)
+    let fs: RemoteFs
+    try {
+      fs = await b.fs
+    } catch (e) {
+      endBrowse(session)
+      throw e
+    }
+    const dir = path || (await fs.realpath('.'))
+    // Symlinks stay listed: deployment roots are often links (e.g. /var/www/current).
+    const entries = (await fs.list(dir)).filter((e) => e.type !== 'file').sort((a, b) => a.name.localeCompare(b.name))
+    return { path: dir, entries }
+  })
+
+  handle('hosts:browseEnd', (session) => endBrowse(session))
 
   handle('hosts:connect', async (id) => {
     s.store.update((st) => ({ ...st, settings: { ...st.settings, activeHostId: id } }))

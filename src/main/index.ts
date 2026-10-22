@@ -1,7 +1,7 @@
 import { app, BrowserWindow, nativeTheme } from 'electron'
 import { createServices, type Services } from './services'
 import { registerIpc } from './ipc'
-import { createWindow } from './window'
+import { createWindow, getMainWindow } from './window'
 
 app.setName('Deplox')
 // Separate profile for development and automated checks.
@@ -13,7 +13,7 @@ if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
   app.on('second-instance', () => {
-    const w = BrowserWindow.getAllWindows()[0]
+    const w = getMainWindow() ?? BrowserWindow.getAllWindows()[0]
     if (w) {
       if (w.isMinimized()) w.restore()
       w.focus()
@@ -29,7 +29,8 @@ if (!app.requestSingleInstanceLock()) {
     createWindow(settings)
 
     app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0 && services) createWindow(services.store.get().settings)
+      // A Sync window may outlive the main window on macOS; the dock icon brings the main window back.
+      if (!getMainWindow() && services) createWindow(services.store.get().settings)
     })
   })
 

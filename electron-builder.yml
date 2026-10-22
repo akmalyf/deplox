@@ -1,4 +1,4 @@
-appId: id.ebelanja.deplox
+appId: com.deplox.app
 productName: Deplox
 directories:
   buildResources: resources

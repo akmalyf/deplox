@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 
 /** Scrim + dialog card with focus trap-lite: focuses the first control, Escape cancels. */
-export function Modal({ label, onCancel, children, width = 460, role = 'dialog' }: { label: string; onCancel?: () => void; children: ReactNode; width?: number; role?: 'dialog' | 'alertdialog' }) {
+export function Modal({ label, onCancel, children, width = 460, role = 'dialog', className }: { label: string; onCancel?: () => void; children: ReactNode; width?: number; role?: 'dialog' | 'alertdialog'; className?: string }) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const el = ref.current
@@ -29,7 +29,7 @@ export function Modal({ label, onCancel, children, width = 460, role = 'dialog' 
     return () => window.removeEventListener('keydown', key, true)
   }, [onCancel])
   return (
-    <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && onCancel?.()}>
+    <div className={className ? `scrim ${className}` : 'scrim'} onMouseDown={(e) => e.target === e.currentTarget && onCancel?.()}>
       <div ref={ref} className="dialog" role={role} aria-modal="true" aria-label={label} style={{ width }}>
         {children}
       </div>

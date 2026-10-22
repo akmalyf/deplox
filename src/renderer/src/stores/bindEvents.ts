@@ -3,7 +3,8 @@ import { useUi } from './ui'
 import { useTransfers } from './transfers'
 import { useTerminal, terminalBus } from './terminal'
 import { useSync } from './sync'
-import { useCompare } from './compare'
+import { invoke } from '../lib/ipc'
+import { syncRoute } from '../lib/route'
 import { useBrowser } from './browser'
 
 let bound = false
@@ -46,8 +47,9 @@ export function bindEvents(): void {
   d.on('terminal:info', ({ sessionId, info }) => useTerminal.getState().setInfo(sessionId, info))
   d.on('sync:items', ({ items }) => useSync.getState().setItems(items))
   d.on('app:toast', ({ text, tone }) => useUi.getState().toast(text, tone))
+  // "Compare" in the overwrite prompt opens that file in the Sync dialog.
   d.on('app:openCompare', (p) => {
-    useUi.getState().setView('compare')
-    void useCompare.getState().open(p)
+    // Every window gets the event; only the main window opens the Sync window.
+    if (!syncRoute) void invoke('app:openSyncWindow', { hostId: p.hostId, scope: { localPath: p.localPath, remotePath: p.remotePath, isDir: false } })
   })
 }

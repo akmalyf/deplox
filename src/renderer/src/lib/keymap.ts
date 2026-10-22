@@ -1,6 +1,6 @@
 import { useUi } from '../stores/ui'
 import { useApp } from '../stores/app'
-import { compareSelection, downloadSelection, uploadSelection } from './actions'
+import { downloadSelection, syncSelection, uploadSelection } from './actions'
 import { isMac } from './ipc'
 
 function editable(t: EventTarget | null): boolean {
@@ -37,7 +37,7 @@ export function installKeymap(): () => void {
     }
     if (ui.paletteOpen || ui.confirm || ui.input || ui.prompts.length || ui.projectDialog) return
     if (mod && !e.altKey && !e.shiftKey) {
-      const views = { '1': 'browser', '2': 'compare', '3': 'terminal', '4': 'sync' } as const
+      const views = { '1': 'browser', '2': 'terminal' } as const
       if (e.key in views) {
         e.preventDefault()
         ui.setView(views[e.key as keyof typeof views])
@@ -73,7 +73,7 @@ export function installKeymap(): () => void {
       void downloadSelection()
     } else if (mod && !e.altKey && e.key.toLowerCase() === 'd') {
       e.preventDefault()
-      compareSelection()
+      syncSelection()
     }
   }
   window.addEventListener('keydown', onKey)

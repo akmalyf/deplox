@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { Client, type SFTPWrapper } from 'ssh2'
 import { SftpFs } from './SftpFs'
 import { RemoteFsError } from './errors'
+import { walkRemote } from '../transfers/walk'
 
 let fs: SftpFs
 const tmp = mkdtempSync(join(tmpdir(), 'deplox-int-'))
@@ -33,6 +34,20 @@ describe('SftpFs against the dev server', () => {
     expect(names).toContain('composer.json')
     expect(list.find((e) => e.name === 'app')?.type).toBe('dir')
     expect(await fs.realpath('.')).toBe('/home/deploy')
+  })
+
+  it('walks a tree with parallel listings and finds every file once', async () => {
+    const seq: string[] = []
+    const visit = async (dir: string) => {
+      for (const e of await fs.list(dir)) {
+        if (e.type === 'dir') await visit(e.path)
+        else if (e.type === 'file') seq.push(e.path)
+      }
+    }
+    await visit('/var/www/app')
+    const w = await walkRemote(fs, '/var/www/app', () => false)
+    expect(w.files.map((f) => f.path).sort()).toEqual(seq.sort())
+    expect(seq.length).toBeGreaterThan(0)
   })
 
   it('mkdir -p, upload, stat, download', async () => {

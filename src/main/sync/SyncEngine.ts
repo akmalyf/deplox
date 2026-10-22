@@ -1,8 +1,8 @@
 import { stat } from 'node:fs/promises'
 import { watch, type FSWatcher } from 'chokidar'
-import type { FsEntry, SyncItem, TransferJob } from '@shared/types'
+import type { FsEntry, SyncAction, SyncApplyRequest, SyncCompareRequest, SyncDiff, SyncItem, SyncStatus, TransferJob } from '@shared/types'
 import { formatClock, formatWhen } from '@shared/format'
-import { normLocal, relativeTo, toLocalPath, toRemotePath, findMappingForLocal } from '@shared/paths'
+import { expandHome, normLocal, relativeTo, toLocalPath, toRemotePath, findMappingForLocal } from '@shared/paths'
 import type { Host } from '@shared/types'
 import type { StoredHost } from '../store/schema'
 import type { ConnectionManager } from '../remote/ConnectionManager'
@@ -132,7 +132,7 @@ export class SyncEngine {
         this.put({ ...item, reason: `Uploading on save · ${formatClock(Date.now())}` })
         await this.enqueue([item], 'save')
       } else if (host.behavior.uploadOnSave && item.kind === 'conflict') {
-        toast(`${basenameOf(abs)} changed on ${host.name}: review it in Compare`, 'danger')
+        toast(`${basenameOf(abs)} changed on ${host.name}: review it with Sync`, 'danger')
       }
     }
   }
@@ -263,6 +263,81 @@ export class SyncEngine {
     return this.list()
   }
 
+  /* ---------------- compare (Sync dialog) ---------------- */
+
+  /**
+   * Lists the files that differ between local and server for one host, limited to a file or
+   * folder when `scope` is given. Read-only apart from remembering same-size pairs as synced.
+   */
+  async compare(hostId: string, scope?: SyncCompareRequest['scope']): Promise<SyncDiff[]> {
+    const host = this.deps.getHost(hostId)
+    if (!host) throw new Error('[ENOENT] Host not found')
+    const fs = await this.deps.conns.get(hostId)
+    const home = this.deps.home
+    const out: SyncDiff[] = []
+    const add = (localPath: string, remotePath: string, local: LocalInfo | null, remote: LocalInfo | null) => {
+      const verdict = judge(local, remote, this.deps.snapshots.get(hostId, remotePath))
+      if (verdict === 'same') {
+        if (local && remote && !this.deps.snapshots.get(hostId, remotePath)) {
+          // Unknown history and same size: treat as in sync and remember it (as a scan does).
+          this.deps.snapshots.set(hostId, remotePath, { localMtime: local.mtime, localSize: local.size, remoteMtime: remote.mtime, remoteSize: remote.size, syncedAt: Date.now() })
+        }
+        return
+      }
+      const m = findMappingForLocal(host as Host, localPath, home)
+      const relPath = (m && relativeTo(m.local, localPath)) || basenameOf(localPath)
+      out.push({ relPath: relPath.replace(/\\/g, '/'), localPath, remotePath, local, remote, ...verdict })
+    }
+
+    const walkPair = async (localDir: string, remoteDir: string) => {
+      const [lw, rw] = await Promise.all([
+        walkLocal(localDir, (p, d) => isExcludedLocal(host, p, d, home)).catch(() => ({ dirs: [], files: [], skipped: 0 })),
+        walkRemote(fs, remoteDir, (p, d) => isExcludedRemote(host, p, d, home)).catch((e) => {
+          if (toRemoteFsError(e).code === 'ENOENT') return { dirs: [], files: [], skipped: 0 }
+          throw e
+        })
+      ])
+      const remoteByPath = new Map(rw.files.map((f) => [f.path, f]))
+      const seen = new Set<string>()
+      for (const f of lw.files) {
+        const lp = normLocal(f.path)
+        const rp = toRemotePath(host as Host, lp, home)
+        if (!rp) continue
+        seen.add(rp)
+        const r = remoteByPath.get(rp)
+        add(lp, rp, { mtime: f.mtime, size: f.size }, r ? { mtime: r.mtime, size: r.size } : null)
+      }
+      for (const r of rw.files) {
+        if (seen.has(r.path)) continue
+        const lp = toLocalPath(host as Host, r.path, home)
+        if (lp) add(normLocal(lp), r.path, null, { mtime: r.mtime, size: r.size })
+      }
+    }
+
+    if (!scope) {
+      for (const m of host.mappings) if (m.local.trim() && m.remote.trim()) await walkPair(normLocal(expandHome(m.local, home)), m.remote)
+    } else if (scope.isDir) {
+      await walkPair(normLocal(scope.localPath), scope.remotePath)
+    } else {
+      const local = await statLocal(scope.localPath)
+      const remote = await fs.stat(scope.remotePath).then(
+        (e) => (e.type === 'file' ? { mtime: e.mtime, size: e.size } : null),
+        (e) => {
+          if (toRemoteFsError(e).code === 'ENOENT') return null
+          throw e
+        }
+      )
+      if (local || remote) add(normLocal(scope.localPath), scope.remotePath, local, remote)
+    }
+    return out.sort((a, b) => a.relPath.localeCompare(b.relPath))
+  }
+
+  /** Queues the actions chosen in the Sync dialog; finished jobs update the snapshot. */
+  async apply({ hostId, items }: SyncApplyRequest): Promise<void> {
+    if (!items.length) return
+    await this.deps.queue.enqueue(items.map((it) => ({ kind: it.action, hostId, localPath: it.localPath, remotePath: it.remotePath, source: 'sync' as const, force: true })))
+  }
+
   /* ---------------- run ---------------- */
 
   private async enqueue(items: SyncItem[], source: 'sync' | 'save'): Promise<void> {
@@ -340,9 +415,8 @@ export class SyncEngine {
     const id = this.jobItems.get(job.id) ?? itemId(host.id, job.remotePath)
     this.jobItems.delete(job.id)
     const it = this.items.get(id)
-    if (!it) {
-      if (job.source === 'manual') return
-    }
+    // Jobs from the Sync dialog or manual transfers have no tracked item: the snapshot above is all they need.
+    if (!it) return
     const verb = job.kind === 'upload' ? 'Uploaded' : job.kind === 'download' ? 'Downloaded' : 'Deleted'
     const base = it ?? {
       id,
@@ -400,6 +474,29 @@ async function statLocal(p: string): Promise<LocalInfo | null> {
   } catch {
     return null
   }
+}
+
+/** Compares a pair with its last-synced snapshot. One-sided files and conflicts are left for the user. */
+function judge(local: LocalInfo | null, remote: LocalInfo | null, snap: { localMtime: number; localSize: number; remoteMtime: number; remoteSize: number } | undefined): { status: SyncStatus; action: SyncAction } | 'same' {
+  if (!local && !remote) return 'same'
+  if (!remote) return { status: 'local-only', action: 'skip' }
+  if (!local) return { status: 'remote-only', action: 'skip' }
+  let localChanged: boolean
+  let remoteChanged: boolean
+  if (snap) {
+    localChanged = Math.abs(local.mtime - snap.localMtime) >= 1000 || local.size !== snap.localSize
+    remoteChanged = remote.mtime !== snap.remoteMtime || remote.size !== snap.remoteSize
+  } else if (local.size === remote.size) {
+    return 'same'
+  } else {
+    // No history: the newer side wins.
+    localChanged = remote.mtime <= local.mtime + 2000
+    remoteChanged = !localChanged
+  }
+  if (localChanged && remoteChanged) return { status: 'conflict', action: 'skip' }
+  if (localChanged) return { status: 'local-changed', action: 'upload' }
+  if (remoteChanged) return { status: 'remote-changed', action: 'download' }
+  return 'same'
 }
 
 function basenameOf(p: string): string {

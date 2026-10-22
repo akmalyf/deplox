@@ -5,6 +5,10 @@ import type {
   CompareWriteRequest,
   EnqueueRequest,
   FsEntry,
+  SyncApplyRequest,
+  SyncCompareRequest,
+  SyncDiff,
+  SyncWindowRequest,
   Host,
   HostConn,
   HostSaveRequest,
@@ -30,6 +34,7 @@ export interface InvokeMap {
   'app:pickPath': [{ kind: 'file' | 'folder'; defaultPath?: string; title?: string }, string | null]
   'app:revealPath': [string, void]
   'app:copyText': [string, void]
+  'app:openSyncWindow': [SyncWindowRequest, void]
 
   'projects:save': [Project, Project[]]
   'projects:delete': [string, Project[]]
@@ -39,6 +44,9 @@ export interface InvokeMap {
   'hosts:delete': [string, Host[]]
   'hosts:duplicate': [string, Host[]]
   'hosts:test': [HostSaveRequest, TestResult]
+  /** Lists folders over a throwaway connection made from unsaved form values; an empty path is the login folder. */
+  'hosts:browse': [HostSaveRequest & { session: string; path: string }, { path: string; entries: FsEntry[] }]
+  'hosts:browseEnd': [string, void]
   'hosts:connect': [string, HostConn]
   'hosts:disconnect': [string, HostConn]
 
@@ -76,6 +84,8 @@ export interface InvokeMap {
   'terminal:close': [string, void]
 
   'sync:scan': [string, SyncItem[]]
+  'sync:compare': [SyncCompareRequest, SyncDiff[]]
+  'sync:apply': [SyncApplyRequest, void]
   'sync:run': [string[], void]
   'sync:remove': [string[], void]
   'sync:resolve': [{ id: string; resolution: 'upload' | 'download' }, void]
@@ -114,9 +124,9 @@ export type SendChannel = keyof SendMap
 export type EventChannel = keyof EventMap
 
 export const INVOKE_CHANNELS = [
-  'app:getState', 'app:updateSettings', 'app:pickPath', 'app:revealPath', 'app:copyText',
+  'app:getState', 'app:updateSettings', 'app:pickPath', 'app:revealPath', 'app:copyText', 'app:openSyncWindow',
   'projects:save', 'projects:delete', 'projects:open',
-  'hosts:save', 'hosts:delete', 'hosts:duplicate', 'hosts:test', 'hosts:connect', 'hosts:disconnect',
+  'hosts:save', 'hosts:delete', 'hosts:duplicate', 'hosts:test', 'hosts:browse', 'hosts:browseEnd', 'hosts:connect', 'hosts:disconnect',
   'prompt:answer',
   'local:list', 'local:stat', 'local:mkdir', 'local:rename', 'local:delete', 'local:home',
   'remote:list', 'remote:stat', 'remote:mkdir', 'remote:rename', 'remote:delete', 'remote:realpath',
@@ -124,7 +134,7 @@ export const INVOKE_CHANNELS = [
   'transfers:remove', 'transfers:pauseAll', 'transfers:resumeAll', 'transfers:clearDone',
   'compare:load', 'compare:writeRemote', 'compare:writeLocal',
   'terminal:open', 'terminal:close',
-  'sync:scan', 'sync:run', 'sync:remove', 'sync:resolve', 'sync:clearDone', 'sync:setWatching',
+  'sync:scan', 'sync:compare', 'sync:apply', 'sync:run', 'sync:remove', 'sync:resolve', 'sync:clearDone', 'sync:setWatching',
   'snippets:save'
 ] as const satisfies readonly InvokeChannel[]
 

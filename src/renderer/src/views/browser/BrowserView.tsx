@@ -1,13 +1,11 @@
 import { useEffect, useRef, type UIEvent } from 'react'
-import { Button, Chip, Icon } from '@/ds'
-import { formatAgo } from '@shared/format'
+import { Button, Chip } from '@/ds'
 import { useActiveHost, useActiveProject, useConn } from '../../stores/app'
 import { useBrowser } from '../../stores/browser'
-import { useTransfers } from '../../stores/transfers'
 import { useUi } from '../../stores/ui'
-import { ALT, MOD, invoke } from '../../lib/ipc'
-import { connectHost, downloadSelection, hostRoots, uploadSelection } from '../../lib/actions'
-import { ConnStatus, Crumbs, Header, PaletteTrigger, Sep } from '../../shell/HeaderParts'
+import { invoke } from '../../lib/ipc'
+import { connectHost, hostRoots, syncAll } from '../../lib/actions'
+import { Crumbs, Header, PaletteTrigger, Sep } from '../../shell/HeaderParts'
 import { FilePane } from './FilePane'
 import { TransfersPanel } from './TransfersPanel'
 
@@ -20,13 +18,8 @@ export function BrowserView() {
   const setHost = useBrowser((s) => s.setHost)
   const setRoot = useBrowser((s) => s.setRoot)
   const remoteRoot = useBrowser((s) => s.remote.root)
-  const localRoot = useBrowser((s) => s.local.root)
   const diffOnly = useBrowser((s) => s.diffOnly)
   const syncScroll = useBrowser((s) => s.syncScroll)
-  const localSel = useBrowser((s) => s.local.selected.size)
-  const remoteSel = useBrowser((s) => s.remote.selected.size)
-  const lastDone = useTransfers((s) => Object.values(s.jobs).reduce((m, j) => (j.state === 'done' && j.finishedAt && j.finishedAt > m ? j.finishedAt : m), 0))
-  const setView = useUi((s) => s.setView)
   const localRef = useRef<HTMLDivElement>(null)
   const remoteRef = useRef<HTMLDivElement>(null)
   const scrolling = useRef<'local' | 'remote' | null>(null)
@@ -75,7 +68,6 @@ export function BrowserView() {
   }
 
   const connected = conn.state === 'connected'
-  const mapping = host?.mappings[0]
 
   return (
     <>
@@ -85,21 +77,16 @@ export function BrowserView() {
             <>
               <Sep />
               <span className="crumb-path">{remoteRoot || '…'}</span>
-              <ConnStatus hostId={host.id} />
             </>
           ) : null}
         </Crumbs>
         <span className="spacer" />
         <PaletteTrigger />
-        <Button variant="ghost" size="sm" icon="arrow-up-right" disabled={!connected || (!localSel && !remoteSel)} onClick={() => void uploadSelection()} title={`Upload selection (${ALT}${MOD}↑)`}>
-          Upload
-        </Button>
-        <Button variant="ghost" size="sm" icon="arrow-down" disabled={!connected || (!localSel && !remoteSel)} onClick={() => void downloadSelection()} title={`Download selection (${ALT}${MOD}↓)`}>
-          Download
-        </Button>
-        <Button variant="primary" size="sm" icon="git-branch" disabled={!host} onClick={() => setView('sync')}>
-          Sync
-        </Button>
+        {host ? (
+          <Button variant="primary" size="sm" icon="git-branch" disabled={!connected} onClick={() => syncAll()} title="Compare every mapped file with the server and choose what to sync">
+            Sync All
+          </Button>
+        ) : null}
       </Header>
 
       {!host ? (
@@ -116,7 +103,7 @@ export function BrowserView() {
         </div>
       ) : (
         <>
-          <div role="toolbar" aria-label="Pane options" style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px 0' }}>
+          <div role="toolbar" aria-label="Pane options" style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px 0' }}>
             <Chip shape="square" icon="filter" selected={diffOnly} onClick={() => useBrowser.getState().setDiffOnly(!diffOnly)}>
               Differences only
             </Chip>
@@ -141,16 +128,8 @@ export function BrowserView() {
             </span>
           </div>
 
-          <div style={{ flex: '1 1 auto', minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 32px minmax(0, 1fr)', gap: 8, padding: '12px 16px 16px' }}>
+          <div style={{ flex: '1 1 auto', minHeight: 0, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 8, padding: '8px 12px' }}>
             <FilePane side="local" host={host} conn={conn} ref={localRef} onScroll={onScroll('local')} />
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <button type="button" className="xfer" disabled={!connected || !localSel} aria-label={`Upload selected to ${host.name}`} title={`Upload selected to remote (${ALT}${MOD}↑)`} onClick={() => void uploadSelection('local')}>
-                »
-              </button>
-              <button type="button" className="xfer" disabled={!connected || !remoteSel} aria-label={`Download selected from ${host.name}`} title={`Download selected to local (${ALT}${MOD}↓)`} onClick={() => void downloadSelection('remote')}>
-                «
-              </button>
-            </div>
             <FilePane side="remote" host={host} conn={conn} ref={remoteRef} onScroll={onScroll('remote')} />
           </div>
 
@@ -158,26 +137,6 @@ export function BrowserView() {
         </>
       )}
 
-      <footer className="app-footer">
-        {host ? (
-          <>
-            <span>
-              {host.protocol.toUpperCase()}
-              {conn.info.serverVersion ? ` · ${conn.info.serverVersion}` : ''}
-              {conn.info.cipher ? ` · ${conn.info.cipher}` : ''}
-            </span>
-            <span title={mapping ? `${mapping.local} → ${mapping.remote}` : undefined}>Mapping: {mapping ? `${mapping.local} → ${mapping.remote}` : `${localRoot} → ${remoteRoot || '(home)'}`}</span>
-            <span>Auto-upload on save: {host.behavior.uploadOnSave ? 'On' : 'Off'}</span>
-          </>
-        ) : (
-          <span>{project?.localRoot}</span>
-        )}
-        <span className="spacer" />
-        <span>
-          <Icon name="git-branch" size={11} style={{ verticalAlign: '-1px', marginRight: 4 }} />
-          {lastDone ? `Last transfer ${formatAgo(lastDone)}` : 'No transfers yet'}
-        </span>
-      </footer>
     </>
   )
 }

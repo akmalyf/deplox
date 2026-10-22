@@ -43,6 +43,8 @@ export class Prompter {
     if (!p) return
     this.finish(requestId)
     p.resolve(answer)
+    // Other windows showing the same prompt drop it.
+    emit('prompt:cancel', { requestId })
   }
 
   cancelAll(): void {

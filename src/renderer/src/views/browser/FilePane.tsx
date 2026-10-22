@@ -4,7 +4,7 @@ import type { Host, HostConn } from '@shared/types'
 import { useBrowser, counterpart, type Side } from '../../stores/browser'
 import { useSync } from '../../stores/sync'
 import { ALT, MOD, invoke } from '../../lib/ipc'
-import { compareSelection, copyText, hostRoots, deletePaths, downloadSelection, newFolder, openLocalTerminal, openSsh, renamePath, uploadSelection } from '../../lib/actions'
+import { copyText, syncSelection, hostRoots, deletePaths, downloadSelection, newFolder, openLocalTerminal, openSsh, renamePath, uploadSelection } from '../../lib/actions'
 import { buildTree, conflictPaths } from './tree'
 import { Disconnected, LoadingSkeleton, NoMapping, ReconnectBanner, SignInFailed } from './PaneStates'
 import { useUi } from '../../stores/ui'
@@ -97,7 +97,7 @@ export const FilePane = forwardRef<HTMLDivElement, Props>(function FilePane({ si
             onToggle={(path, _n, open) => toggle(side, path, open)}
             onOpen={(path) => {
               select(side, path, { shift: false, meta: false }, tree.order)
-              compareSelection(side)
+              syncSelection(side)
             }}
             onContextMenu={(_p, node, e) => openMenu(e.clientX, e.clientY, node)}
             empty={
@@ -179,11 +179,9 @@ export const FilePane = forwardRef<HTMLDivElement, Props>(function FilePane({ si
         <MenuPopover x={menu.x} y={menu.y} width={248} label={`${label} file actions`} onClose={() => setMenu(null)}>
           {node ? (
             <>
-              {!isDir ? (
-                <MenuItem icon="copy" shortcut={`${MOD}D`} disabled={!cp} onClick={() => compareSelection(side)}>
-                  Compare with {isRemote ? 'Local' : 'Remote'}
-                </MenuItem>
-              ) : null}
+              <MenuItem icon="git-branch" shortcut={`${MOD}D`} disabled={!cp || conn.state !== 'connected'} onClick={() => syncSelection(side)}>
+                {isDir ? 'Sync Folder…' : 'Sync File…'}
+              </MenuItem>
               <MenuItem icon="arrow-down" shortcut={`${ALT}${MOD}↓`} disabled={!cp || conn.state !== 'connected'} onClick={() => void downloadSelection(side)}>
                 Download to Local
               </MenuItem>

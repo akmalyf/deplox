@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from './Icon'
 import { Kbd } from './primitives'
 import { cx } from './cx'
@@ -83,7 +84,8 @@ export function MenuPopover({ x, y, onClose, label, width = 240, children }: Men
     }
   }, [onClose])
 
-  return (
+  // Portaled to <body> so a clipping or stacking ancestor (the sidebar) can't cut the menu off.
+  return createPortal(
     <div
       ref={ref}
       style={{ position: 'fixed', left: pos.left, top: pos.top, zIndex: 'var(--z-popover)' as unknown as number }}
@@ -102,6 +104,7 @@ export function MenuPopover({ x, y, onClose, label, width = 240, children }: Men
       <Menu label={label} width={width}>
         {children}
       </Menu>
-    </div>
+    </div>,
+    document.body
   )
 }

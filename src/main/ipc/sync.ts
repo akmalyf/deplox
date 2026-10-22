@@ -3,6 +3,8 @@ import type { Services } from '../services'
 
 export function registerSync(s: Services): void {
   handle('sync:scan', (projectId) => s.sync.scan(projectId))
+  handle('sync:compare', ({ hostId, scope }) => s.sync.compare(hostId, scope))
+  handle('sync:apply', (req) => s.sync.apply(req))
   handle('sync:run', (ids) => s.sync.run(ids))
   handle('sync:remove', (ids) => s.sync.remove(ids))
   handle('sync:resolve', ({ id, resolution }) => s.sync.resolve(id, resolution))

@@ -9,10 +9,10 @@ Electron 44 · electron-vite 6 · React 19 · TypeScript 7 · ssh2 · basic-ftp 
 - **Hosts per project**: SFTP (password, key pair, ssh-agent), FTP and FTPS (passive), path mappings, excluded patterns (gitignore-style), secrets in the OS keychain (`safeStorage`), host-key verification with a known-hosts store.
 - **Remote Browser**: two lazy-loading trees with differs / local-only / remote-only / conflict markers, synced expand and scroll, filters, context menus, new folder, rename, delete (local goes to Trash).
 - **Transfers**: queue with per-host concurrency, folder recursion, progress and speed, pause/resume (byte offset), cancel, retry, log. Paused automatically when a connection drops and resumed after reconnect.
-- **Compare**: side-by-side diff, per-line checkboxes, per-hunk » upload / « take, result preview, ignore whitespace, keeps EOL/BOM/trailing newline, refuses to overwrite a file that changed since it was loaded.
+- **Sync**: *Sync All* in Remote Browser, or right-click a file or folder → *Sync File/Folder…*, opens a directory compare in its own window, judged against the last-synced snapshot. Pick upload / download / skip per file (conflicts and one-sided files default to skip), review a file's lines below — side-by-side diff, per-line checkboxes, per-hunk » upload / « take, ⌘Z undo, result preview, ignore whitespace, keeps EOL/BOM/trailing newline — then *Synchronize*.
 - **Terminals**: SSH shells over the host's connection and local shells (node-pty), tabs, snippets, session info, flow control.
-- **Sync Queue**: file watcher + rescan of both sides against a last-synced snapshot, conflicts routed to Compare, upload on save, run confirmation listing deletes.
-- Command palette (⌘K), ⌘1–4 views, ⌥⌘↑/↓ upload/download, ⌘D compare, dark/light/system theme.
+- **Upload on save**: a file watcher uploads saved files when the host enables it; files changed on the server too are left for Sync.
+- Command palette (⌘K), ⌘1–2 views, ⌥⌘↑/↓ upload/download, ⌘D sync selection, dark/light/system theme.
 
 ## Develop
 

@@ -1,12 +1,11 @@
-import { useMemo, useState } from 'react'
-import { Button, Icon, Kbd, MenuItem, MenuPopover, NavGroup, NavItem, SearchInput, SectionLabel, Sidebar, StatusDot } from '@/ds'
+import { useState } from 'react'
+import { Button, Icon, Kbd, MenuItem, MenuPopover, NavGroup, NavItem, SectionLabel, Sidebar, StatusDot } from '@/ds'
 import type { Host } from '@shared/types'
 import { useApp, useActiveHost, useActiveProject, useProjectHosts } from '../stores/app'
 import { useUi, type View } from '../stores/ui'
-import { useSync } from '../stores/sync'
 import { invoke, isMac, MOD } from '../lib/ipc'
-import { copyText, connectHost, hostAddress, openSsh, selectHost } from '../lib/actions'
-import { connLabel } from './HeaderParts'
+import { copyText, connectHost, hostAddress, selectHost } from '../lib/actions'
+import { connLabel, ProjectSwitch } from './HeaderParts'
 import { toast } from '../stores/ui'
 
 const ICON: Record<Host['protocol'], string> = { sftp: 'database', ftps: 'cloud', ftp: 'box' }
@@ -21,15 +20,8 @@ export function HostSidebar() {
   const hosts = useProjectHosts()
   const active = useActiveHost()
   const conns = useApp((s) => s.conns)
-  const pending = useSync((s) => s.items.filter((i) => i.group !== 'done' && i.projectId === project?.id).length)
   const userName = useApp((s) => s.home.split(/[\\/]/).filter(Boolean).pop() ?? 'You')
-  const [q, setQ] = useState('')
   const [menu, setMenu] = useState<{ host: Host; x: number; y: number } | null>(null)
-
-  const shown = useMemo(() => {
-    const t = q.trim().toLowerCase()
-    return t ? hosts.filter((h) => h.name.toLowerCase().includes(t) || h.host.toLowerCase().includes(t)) : hosts
-  }, [hosts, q])
 
   // Shortcut chips only show while the modifier key is held; a badge (pending count) stays visible otherwise.
   const nav = (v: View, label: string, icon: string, shortcut: string, badge?: string) => (
@@ -73,19 +65,17 @@ export function HostSidebar() {
         </Button>
       </div>
       <div style={{ padding: '0 12px' }}>
-        <SearchInput variant="sidebar" placeholder="Search hosts" width="100%" value={q} onValueChange={setQ} />
+        <ProjectSwitch variant="sidebar" />
       </div>
       <NavGroup label="Workspace">
         {nav('browser', 'Remote Browser', 'cloud', `${MOD}1`)}
-        {nav('compare', 'Compare', 'copy', `${MOD}2`)}
-        {nav('terminal', 'SSH Sessions', 'terminal', `${MOD}3`)}
-        {nav('sync', 'Sync Queue', 'git-branch', `${MOD}4`, pending ? String(pending) : undefined)}
+        {nav('terminal', 'SSH Sessions', 'terminal', `${MOD}2`)}
       </NavGroup>
       {project ? (
         <div>
           <SectionLabel variant="sidebar">Hosts · {project.name}</SectionLabel>
           <NavGroup label="Hosts">
-            {shown.map((h) => {
+            {hosts.map((h) => {
               const c = conns[h.id]
               const l = connLabel(c ?? { hostId: h.id, state: 'disconnected', attempt: 0, maxAttempts: 5, info: {} })
               const selected = view === 'host' ? editHostId === h.id : active?.id === h.id
@@ -130,7 +120,6 @@ export function HostSidebar() {
                 </div>
               )
             })}
-            {q && !shown.length ? <div style={{ padding: '4px 12px', fontSize: 12, color: 'var(--ink-subtle)' }}>No hosts match “{q}”</div> : null}
             <NavItem icon="plus" selected={view === 'host' && editHostId === 'new'} onClick={() => editHost('new')}>
               Add Host
             </NavItem>
@@ -145,9 +134,6 @@ export function HostSidebar() {
           </div>
           <MenuItem icon="pencil" shortcut="E" onClick={() => editHost(menu.host.id)}>
             Edit Host…
-          </MenuItem>
-          <MenuItem icon="terminal" shortcut="T" disabled={menu.host.protocol !== 'sftp'} onClick={() => void openSsh(menu.host.id)}>
-            Open SSH Session
           </MenuItem>
           <MenuItem icon="copy" shortcut="C" onClick={() => void copyText(hostAddress(menu.host), 'Address')}>
             Copy Address

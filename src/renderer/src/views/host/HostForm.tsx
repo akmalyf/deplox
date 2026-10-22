@@ -6,7 +6,8 @@ import { useApp, useActiveProject } from '../../stores/app'
 import { useUi, toast } from '../../stores/ui'
 import { invoke, errorText } from '../../lib/ipc'
 import { connectHost } from '../../lib/actions'
-import { Header, ProjectSwitch, Sep } from '../../shell/HeaderParts'
+import { Header, ProjectCrumb } from '../../shell/HeaderParts'
+import { RemoteFolderPicker } from './RemoteFolderPicker'
 
 const DEFAULT_EXCLUDES = ['.env', '.git', 'node_modules', 'vendor', 'storage/logs', '.DS_Store']
 
@@ -77,11 +78,21 @@ function Form({ existing, projectId, localRoot }: { existing?: Host; projectId: 
 
   const secretPayload = () => (auth === 'agent' ? null : secret ? { value: secret, save: saveSecret } : existing && !saveSecret ? { value: '', save: false } : undefined)
 
+  // Index of the mapping whose deployment path is being browsed on the server.
+  const [browsing, setBrowsing] = useState<number | null>(null)
+  const testRequest = () => ({ host: { ...h, auth: { ...h.auth, method: auth } }, secret: secret ? { value: secret, save: false } : undefined })
+
+  const browseRemote = (i: number) => {
+    setTouched(true)
+    if (errors.host || errors.username || errors.port) return
+    setBrowsing(i)
+  }
+
   const runTest = async () => {
     setTouched(true)
     if (Object.keys(errors).length) return
     setTest({ state: 'running' })
-    const result = await invoke('hosts:test', { host: { ...h, auth: { ...h.auth, method: auth } }, secret: secret ? { value: secret, save: false } : undefined }).catch((e) => ({ ok: false, error: errorText(e) }))
+    const result = await invoke('hosts:test', testRequest()).catch((e) => ({ ok: false, error: errorText(e) }))
     setTest({ state: 'done', result })
   }
 
@@ -116,14 +127,13 @@ function Form({ existing, projectId, localRoot }: { existing?: Host; projectId: 
   return (
     <>
       <Header>
-        <ProjectSwitch />
-        <Sep />
+        <ProjectCrumb />
         <span style={{ color: 'var(--ink)', padding: '0 8px' }}>{existing ? existing.name : 'New host'}</span>
       </Header>
 
       <div style={{ flex: '1 1 auto', minHeight: 0, display: 'flex' }}>
-        <MainPanel variant="settings" title={existing ? 'Edit Remote Host' : 'Add Remote Host'}>
-          <section style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <MainPanel variant="settings">
+          <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <SectionLabel>Connection</SectionLabel>
             <SettingsGroup label="Connection">
               <SettingRow title="Name" description="Shown in the sidebar and on tabs">
@@ -176,7 +186,7 @@ function Form({ existing, projectId, localRoot }: { existing?: Host; projectId: 
             </SettingsGroup>
           </section>
 
-          <section style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <SectionLabel>Authentication</SectionLabel>
             <SettingsGroup label="Authentication">
               <SettingRow title="Method" description={isFtp ? 'FTP servers sign in with a password' : 'Key pair is recommended for production hosts'}>
@@ -224,7 +234,7 @@ function Form({ existing, projectId, localRoot }: { existing?: Host; projectId: 
             </SettingsGroup>
           </section>
 
-          <section style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <SectionLabel>Mappings</SectionLabel>
             <div style={{ background: 'var(--bg-card)', borderRadius: 10, overflow: 'hidden' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 16px minmax(0, 1fr) 28px', gap: 8, padding: '10px 16px 6px', fontSize: 12, lineHeight: '16px', color: 'var(--ink-muted)' }}>
@@ -251,7 +261,12 @@ function Form({ existing, projectId, localRoot }: { existing?: Host; projectId: 
                     </Button>
                   </span>
                   <Icon name="chevron-right" style={{ color: 'var(--ink-subtle)' }} />
-                  <input className={'field field-mono' + (touched && m.remote && !m.remote.startsWith('/') ? ' field-invalid' : '')} type="text" value={m.remote} placeholder="/var/www/app" aria-label="Deployment path" style={{ width: '100%' }} onChange={(e) => patch({ mappings: h.mappings.map((x, j) => (j === i ? { ...x, remote: e.target.value } : x)) })} />
+                  <span className="row" style={{ gap: 4 }}>
+                    <input className={'field field-mono' + (touched && m.remote && !m.remote.startsWith('/') ? ' field-invalid' : '')} type="text" value={m.remote} placeholder="/var/www/app" aria-label="Deployment path" style={{ width: '100%' }} onChange={(e) => patch({ mappings: h.mappings.map((x, j) => (j === i ? { ...x, remote: e.target.value } : x)) })} />
+                    <Button variant="ghost" size="sm" icon="folder-open" iconOnly title="Browse folders on the server" onClick={() => browseRemote(i)}>
+                      Browse server folders
+                    </Button>
+                  </span>
                   <Button variant="ghost" size="sm" icon="x" iconOnly onClick={() => patch({ mappings: h.mappings.filter((_, j) => j !== i) })}>
                     Remove mapping
                   </Button>
@@ -266,7 +281,7 @@ function Form({ existing, projectId, localRoot }: { existing?: Host; projectId: 
             </div>
           </section>
 
-          <section style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <SectionLabel>Excluded paths</SectionLabel>
             <div style={{ background: 'var(--bg-card)', borderRadius: 10, padding: 16, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
               {h.excluded.map((p) => (
@@ -294,7 +309,7 @@ function Form({ existing, projectId, localRoot }: { existing?: Host; projectId: 
             </div>
           </section>
 
-          <section style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <SectionLabel>Behavior</SectionLabel>
             <SettingsGroup label="Behavior">
               <SettingRow title="Upload on save" description="Send changed files to this host as soon as they are saved">
@@ -318,9 +333,20 @@ function Form({ existing, projectId, localRoot }: { existing?: Host; projectId: 
             </SettingsGroup>
           </section>
         </MainPanel>
+        {browsing != null && h.mappings[browsing] ? (
+          <RemoteFolderPicker
+            request={testRequest()}
+            start={h.mappings[browsing].remote}
+            onCancel={() => setBrowsing(null)}
+            onPick={(p) => {
+              patch({ mappings: h.mappings.map((x, j) => (j === browsing ? { ...x, remote: p } : x)) })
+              setBrowsing(null)
+            }}
+          />
+        ) : null}
       </div>
 
-      <footer style={{ height: 60, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 8, padding: '0 24px', borderTop: '1px solid var(--line)' }}>
+      <footer style={{ height: 52, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', borderTop: '1px solid var(--line)' }}>
         <span role="status" className="ell" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: test.state === 'done' && !test.result?.ok ? 'var(--danger)' : 'var(--ink-muted)', minWidth: 0 }}>
           <StatusDot status={testView.status} label={testView.label} />
           <span className="ell">{testView.text}</span>

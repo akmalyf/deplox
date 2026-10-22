@@ -67,7 +67,7 @@ function Inner() {
           <input
             className="field"
             value={name}
-            placeholder="ebelanja-api"
+            placeholder="my-app"
             autoFocus
             onChange={(e) => {
               setName(e.target.value)
@@ -77,7 +77,7 @@ function Inner() {
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span className="field-label">Local folder</span>
           <span className="row">
-            <input className="field field-mono" style={{ flex: '1 1 auto' }} value={root} placeholder="~/Projects/ebelanja-api" onChange={(e) => setRoot(e.target.value)} />
+            <input className="field field-mono" style={{ flex: '1 1 auto' }} value={root} placeholder="~/Projects/my-app" onChange={(e) => setRoot(e.target.value)} />
             <Button
               variant="outline"
               onClick={async () => {

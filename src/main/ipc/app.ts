@@ -2,9 +2,11 @@ import { BrowserWindow, clipboard, dialog, nativeTheme, shell } from 'electron'
 import type { Project, Settings } from '@shared/types'
 import { handle } from './register'
 import type { Services } from '../services'
-import { applyWindowAppearance } from '../window'
+import { applyWindowAppearance, openSyncWindow } from '../window'
 
 export function registerApp(s: Services): void {
+  handle('app:openSyncWindow', (req) => openSyncWindow(req))
+
   handle('app:getState', () => {
     const st = s.store.get()
     const q = s.queue.snapshot()

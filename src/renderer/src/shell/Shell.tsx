@@ -9,9 +9,7 @@ import { ConfirmDialog, InputDialog, Toasts } from './dialogs/CommonDialogs'
 import { ProjectDialog } from './dialogs/ProjectDialog'
 import { BrowserView } from '../views/browser/BrowserView'
 import { WelcomeView } from '../views/WelcomeView'
-import { CompareView } from '../views/compare/CompareView'
 import { TerminalView } from '../views/terminal/TerminalView'
-import { SyncQueueView } from '../views/sync/SyncQueueView'
 import { HostForm } from '../views/host/HostForm'
 import { SettingsView } from '../views/SettingsView'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -35,14 +33,8 @@ export function Shell() {
   const glass = glassEnabled(settings)
   let content
   switch (project || view === 'settings' ? view : 'welcome') {
-    case 'compare':
-      content = <CompareView />
-      break
     case 'terminal':
       content = null
-      break
-    case 'sync':
-      content = <SyncQueueView />
       break
     case 'host':
       content = <HostForm />

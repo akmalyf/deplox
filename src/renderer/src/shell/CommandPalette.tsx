@@ -4,9 +4,8 @@ import { basename } from '@shared/paths'
 import { useApp, useActiveHost, useProjectHosts } from '../stores/app'
 import { useUi } from '../stores/ui'
 import { useBrowser } from '../stores/browser'
-import { useSync } from '../stores/sync'
 import { ALT, MOD } from '../lib/ipc'
-import { compareSelection, downloadSelection, openCompare, openLocalTerminal, openSsh, selectHost, uploadSelection } from '../lib/actions'
+import { downloadSelection, openFileSync, openLocalTerminal, openSsh, selectHost, syncAll, syncSelection, uploadSelection } from '../lib/actions'
 import { counterpart } from '../stores/browser'
 
 interface Item {
@@ -52,7 +51,6 @@ function Palette() {
   const settings = useApp((s) => s.settings)
   const updateSettings = useApp((s) => s.updateSettings)
   const browser = useBrowser()
-  const ready = useSync((s) => s.items.filter((i) => i.group === 'wait').length)
   const [q, setQ] = useState('')
   const [active, setActive] = useState(0)
   const listRef = useRef<HTMLDivElement>(null)
@@ -62,7 +60,7 @@ function Palette() {
     const out: Item[] = []
     const focused = browser[browser.activeSide].focused
     if (host && focused) {
-      out.push({ id: 'cmp-focused', group: 'Recent', icon: 'copy', label: `Compare ${basename(focused)}`, hint: `with ${host.name}`, keys: `${MOD}D`, run: () => compareSelection() })
+      out.push({ id: 'sync-focused', group: 'Recent', icon: 'git-branch', label: `Sync ${basename(focused)}`, hint: `with ${host.name}`, keys: `${MOD}D`, run: () => syncSelection() })
     }
     if (host) {
       out.push(
@@ -70,8 +68,8 @@ function Palette() {
         { id: 'down', group: 'Actions', icon: 'arrow-down', label: 'Download selection', hint: `from ${host.name}`, keys: `${ALT}${MOD}↓`, run: () => void downloadSelection() }
       )
     }
+    if (host) out.push({ id: 'sync-all', group: 'Actions', icon: 'git-branch', label: 'Sync all…', hint: `with ${host.name}`, run: () => syncAll() })
     out.push(
-      { id: 'sync', group: 'Actions', icon: 'git-branch', label: ready ? `Sync ${ready} ready item${ready === 1 ? '' : 's'}` : 'Open Sync Queue', hint: 'Sync Queue', keys: `${MOD}4`, run: () => setView('sync') },
       { id: 'local-term', group: 'Actions', icon: 'terminal', label: 'New local terminal', hint: 'Project folder', run: () => void openLocalTerminal() },
       { id: 'add-host', group: 'Actions', icon: 'plus', label: 'Add host…', run: () => editHost('new') },
       { id: 'new-project', group: 'Actions', icon: 'folder-plus', label: 'New project…', run: () => useUi.getState().openProjectDialog({ mode: 'new' }) },
@@ -103,14 +101,14 @@ function Palette() {
               icon: 'file-code',
               label: e.name,
               hint: `${side === 'local' ? 'Local' : host.name} · ${e.path}`,
-              run: () => cp && openCompare({ hostId: host.id, localPath: side === 'local' ? e.path : cp, remotePath: side === 'remote' ? e.path : cp })
+              run: () => cp && openFileSync({ hostId: host.id, localPath: side === 'local' ? e.path : cp, remotePath: side === 'remote' ? e.path : cp })
             })
           }
         }
       }
     }
     return out
-  }, [browser, host, hosts, q, ready, settings.theme, setView, editHost, updateSettings])
+  }, [browser, host, hosts, q, settings.theme, setView, editHost, updateSettings])
 
   const filtered = useMemo(() => {
     const t = q.trim()

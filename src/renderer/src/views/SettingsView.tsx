@@ -27,7 +27,7 @@ export function SettingsView() {
       </Header>
       <div style={{ flex: '1 1 auto', minHeight: 0, display: 'flex' }}>
         <MainPanel variant="settings" title="Settings">
-          <section style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <SectionLabel>Appearance</SectionLabel>
             <SettingsGroup label="Appearance">
               <SettingRow title="Theme" description="Choose between light, dark, or the system setting">
@@ -47,7 +47,7 @@ export function SettingsView() {
             </SettingsGroup>
           </section>
 
-          <section style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <SectionLabel>Transfers</SectionLabel>
             <SettingsGroup label="Transfers">
               <SettingRow title="Parallel SFTP transfers" description="Default for hosts that don't set their own">
@@ -65,7 +65,7 @@ export function SettingsView() {
             </SettingsGroup>
           </section>
 
-          <section style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <SectionLabel>Terminal</SectionLabel>
             <SettingsGroup label="Terminal">
               <SettingRow title="Local shell" description="Leave empty to use your login shell">

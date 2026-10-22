@@ -89,8 +89,8 @@ const same = {
   'app/Http/Controllers/PaymentController.php': "<?php\n\nnamespace App\\Http\\Controllers;\n\nclass PaymentController extends Controller\n{\n    public function store()\n    {\n        return response()->json(['ok' => true]);\n    }\n}\n",
   'app/Http/Middleware/Authenticate.php': "<?php\n\nnamespace App\\Http\\Middleware;\n\nclass Authenticate\n{\n}\n",
   'routes/web.php': "<?php\n\nRoute::get('/', fn () => view('welcome'));\n",
-  'composer.json': JSON.stringify({ name: 'ebelanja/api', require: { php: '^8.3', 'laravel/framework': '^12.0' } }, null, 2) + '\n',
-  'config/app.php': "<?php\n\nreturn [\n    'name' => env('APP_NAME', 'ebelanja'),\n    'env' => env('APP_ENV', 'production'),\n];\n"
+  'composer.json': JSON.stringify({ name: 'deplox/demo-app', require: { php: '^8.3', 'laravel/framework': '^12.0' } }, null, 2) + '\n',
+  'config/app.php': "<?php\n\nreturn [\n    'name' => env('APP_NAME', 'deplox-demo'),\n    'env' => env('APP_ENV', 'production'),\n];\n"
 }
 for (const [rel, text] of Object.entries(same)) {
   put(local, rel, text, 120)

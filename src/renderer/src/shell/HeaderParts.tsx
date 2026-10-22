@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Button, Icon, Kbd, MenuItem, MenuPopover, StatusDot } from '@/ds'
 import type { Host, HostConn } from '@shared/types'
 import { initials } from '@shared/format'
-import { useApp, useActiveHost, useActiveProject, useConn, useProjectHosts } from '../stores/app'
+import { useApp, useActiveHost, useActiveProject, useProjectHosts } from '../stores/app'
 import { useUi } from '../stores/ui'
 import { hostAddress, selectHost } from '../lib/actions'
 import { invoke } from '../lib/ipc'
@@ -27,7 +27,20 @@ export function Header({ children }: { children?: ReactNode }) {
   )
 }
 
-export function ProjectSwitch() {
+/** Project switcher in a view header: only while the sidebar (where it normally lives) is hidden. */
+export function ProjectCrumb() {
+  const collapsed = useUi((s) => s.sidebarCollapsed)
+  const project = useActiveProject()
+  if (!collapsed || !project) return null
+  return (
+    <>
+      <ProjectSwitch />
+      <Sep />
+    </>
+  )
+}
+
+export function ProjectSwitch({ variant = 'header' }: { variant?: 'header' | 'sidebar' }) {
   const project = useActiveProject()
   const projects = useApp((s) => s.projects)
   const hosts = useApp((s) => s.hosts)
@@ -39,7 +52,7 @@ export function ProjectSwitch() {
     <>
       <button
         type="button"
-        className="proj-switch"
+        className={variant === 'sidebar' ? 'proj-switch proj-switch-sidebar' : 'proj-switch'}
         aria-haspopup="menu"
         aria-expanded={menu ? 'true' : 'false'}
         aria-label={`Switch project, current: ${project.name}`}
@@ -51,8 +64,8 @@ export function ProjectSwitch() {
         <span className="proj-avatar" style={{ background: project.color }} aria-hidden="true">
           {initials(project.name)}
         </span>
-        {project.name}
-        <Icon name="chevron-down" style={{ color: 'var(--ink-subtle)' }} />
+        <span className="ell">{project.name}</span>
+        <Icon name="chevron-down" style={{ color: 'var(--ink-subtle)', flex: '0 0 auto' }} />
       </button>
       {menu ? (
         <MenuPopover x={menu.x} y={menu.y} width={300} label="Switch project" onClose={() => setMenu(null)}>
@@ -157,18 +170,6 @@ export function HostCrumb({ host }: { host: Host }) {
   )
 }
 
-export function ConnStatus({ hostId }: { hostId: string }) {
-  const c = useConn(hostId)
-  const l = connLabel(c)
-  return (
-    <span className="no-drag" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: 8, fontSize: 12, whiteSpace: 'nowrap' }}>
-      <StatusDot status={l.status} label={l.text} />
-      {l.text}
-      {c.state === 'connected' && c.info.latencyMs != null ? ` · ${c.info.latencyMs} ms` : ''}
-    </span>
-  )
-}
-
 export function PaletteTrigger() {
   const setPalette = useUi((s) => s.setPalette)
   return (
@@ -187,13 +188,8 @@ export function Crumbs({ children }: { children?: ReactNode }) {
   const host = useActiveHost()
   return (
     <>
-      <ProjectSwitch />
-      {host ? (
-        <>
-          <Sep />
-          <HostCrumb host={host} />
-        </>
-      ) : null}
+      <ProjectCrumb />
+      {host ? <HostCrumb host={host} /> : null}
       {children}
     </>
   )

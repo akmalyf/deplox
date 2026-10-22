@@ -7,7 +7,7 @@ import { useUi, toast } from '../../stores/ui'
 import { useBrowser } from '../../stores/browser'
 import { invoke } from '../../lib/ipc'
 import { openLocalTerminal, openSsh, selectHost } from '../../lib/actions'
-import { Crumbs, Header, ProjectSwitch, Sep } from '../../shell/HeaderParts'
+import { Crumbs, Header, ProjectCrumb, Sep } from '../../shell/HeaderParts'
 import { XtermPane } from './XtermPane'
 
 function useNow(ms: number): number {
@@ -48,9 +48,17 @@ export function TerminalView({ visible }: { visible: boolean }) {
     else void openLocalTerminal(s.info.cwd)
   }
 
+  // Snippets run with Enter, so confirm first: a misclick could restart a queue or clear caches on a live server.
   const send = (cmd: string) => {
     if (!active || active.exited) return toast('Open a session first')
-    window.deplox.send('terminal:write', { sessionId: active.id, data: cmd + '\r' })
+    const session = active
+    useUi.getState().askConfirm({
+      title: `Run this command in ${session.info.title}?`,
+      description: session.info.kind === 'ssh' ? 'It runs on the server right away.' : 'It runs in this local shell right away.',
+      detail: cmd,
+      confirm: 'Run',
+      run: () => window.deplox.send('terminal:write', { sessionId: session.id, data: cmd + '\r' })
+    })
   }
 
   const addSnippet = () =>
@@ -95,8 +103,7 @@ export function TerminalView({ visible }: { visible: boolean }) {
           <Crumbs />
         ) : (
           <>
-            <ProjectSwitch />
-            <Sep />
+            <ProjectCrumb />
             <span style={{ color: 'var(--ink)', padding: '0 8px', whiteSpace: 'nowrap' }}>{info ? 'Local terminal' : 'Terminal'}</span>
           </>
         )}
@@ -148,7 +155,7 @@ export function TerminalView({ visible }: { visible: boolean }) {
       </Header>
 
       <div style={{ flex: '1 1 auto', minHeight: 0, display: 'flex' }}>
-        <div style={{ flex: '1 1 auto', minWidth: 0, padding: 16, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: '1 1 auto', minWidth: 0, padding: '8px 12px 12px', display: 'flex', flexDirection: 'column' }}>
           {sessions.length ? (
             <ToolPanel
               label="Terminal sessions"
@@ -240,12 +247,6 @@ export function TerminalView({ visible }: { visible: boolean }) {
           ) : null}
         </RightPanel>
       </div>
-
-      <footer className="app-footer">
-        <span>{info?.kind === 'ssh' ? `SSH · ${info.cipher ?? 'encrypted'} · ${info.auth} · keep-alive 15s` : info ? `Local · ${info.shell}` : 'No session'}</span>
-        <span className="spacer" />
-        <span>Copy on select · Paste {window.deplox.platform === 'darwin' ? '⌘V' : 'Ctrl+Shift+V'}</span>
-      </footer>
 
       {addMenu ? (
         <MenuPopover x={addMenu.x} y={addMenu.y} width={260} label="New session" onClose={() => setAddMenu(null)}>

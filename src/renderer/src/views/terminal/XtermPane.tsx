@@ -18,6 +18,10 @@ function themeFromTokens(): ITheme {
     cursor: cssVar('--ink'),
     cursorAccent: cssVar('--bg-raised'),
     selectionBackground: dark ? 'rgba(105, 155, 225, 0.35)' : 'rgba(47, 103, 196, 0.25)',
+    // Match the app's scrollbar thumb.
+    scrollbarSliderBackground: cssVar('--bg-control'),
+    scrollbarSliderHoverBackground: cssVar('--bg-control-hover'),
+    scrollbarSliderActiveBackground: cssVar('--bg-control-hover'),
     black: dark ? '#2a2a30' : '#141414',
     red: cssVar('--danger'),
     green: cssVar('--success-text'),
@@ -84,6 +88,31 @@ export function XtermPane({ sessionId, active }: { sessionId: string; active: bo
       if (s) void invoke('app:copyText', s)
     })
 
+    // Show the scrollbar only while the user scrolls (wheel/trackpad or dragging it), never on output or cursor blink.
+    let scrollTimer: ReturnType<typeof setTimeout> | null = null
+    let dragging = false
+    const reveal = () => {
+      if (t.buffer.active.baseY === 0) return
+      el.classList.add('xterm-scrolling')
+      if (scrollTimer) clearTimeout(scrollTimer)
+      scrollTimer = setTimeout(() => {
+        if (!dragging) el.classList.remove('xterm-scrolling')
+      }, 1000)
+    }
+    const onPointerDown = (e: PointerEvent) => {
+      if (!(e.target as HTMLElement).closest('.scrollbar')) return
+      dragging = true
+      reveal()
+    }
+    const onPointerUp = () => {
+      if (!dragging) return
+      dragging = false
+      reveal()
+    }
+    el.addEventListener('wheel', reveal, { passive: true })
+    el.addEventListener('pointerdown', onPointerDown)
+    window.addEventListener('pointerup', onPointerUp)
+
     let resizeTimer: ReturnType<typeof setTimeout> | null = null
     const doFit = () => {
       if (!el.offsetWidth || !el.offsetHeight) return
@@ -102,6 +131,10 @@ export function XtermPane({ sessionId, active }: { sessionId: string; active: bo
     doFit()
 
     return () => {
+      el.removeEventListener('wheel', reveal)
+      el.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('pointerup', onPointerUp)
+      if (scrollTimer) clearTimeout(scrollTimer)
       ro.disconnect()
       unsub()
       d1.dispose()

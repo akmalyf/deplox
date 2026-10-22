@@ -4,7 +4,6 @@ import { invoke, errorText } from './ipc'
 import { useApp, getActiveHost, getActiveProject } from '../stores/app'
 import { useBrowser, counterpart, parentOf, type Side } from '../stores/browser'
 import { useUi, toast } from '../stores/ui'
-import { useCompare } from '../stores/compare'
 import { useTerminal } from '../stores/terminal'
 
 export function hostRoots(host: Host | undefined, project: Project | undefined): { local: string; remote: string } {
@@ -62,7 +61,7 @@ export async function uploadSelection(side?: Side): Promise<void> {
   if (!b.remote.root) return toast('Set a deployment path for this host first', 'danger')
   const pairs = pairsFor(from)
   if (!pairs.length) return toast('Select files to upload', 'neutral')
-  await enqueue(pairs.map((p) => ({ kind: 'upload', hostId: host.id, localPath: p.local, remotePath: p.remote })))
+  confirmTransfer('upload', host.name, pairs.map((p) => p.remote), () => enqueue(pairs.map((p) => ({ kind: 'upload', hostId: host.id, localPath: p.local, remotePath: p.remote }))))
 }
 
 export async function downloadSelection(side?: Side): Promise<void> {
@@ -72,7 +71,19 @@ export async function downloadSelection(side?: Side): Promise<void> {
   const from = side ?? (b.remote.selected.size ? 'remote' : 'local')
   const pairs = pairsFor(from)
   if (!pairs.length) return toast('Select files to download', 'neutral')
-  await enqueue(pairs.map((p) => ({ kind: 'download', hostId: host.id, localPath: p.local, remotePath: p.remote })))
+  confirmTransfer('download', host.name, pairs.map((p) => p.local), () => enqueue(pairs.map((p) => ({ kind: 'download', hostId: host.id, localPath: p.local, remotePath: p.remote }))))
+}
+
+/** Asks before a manual transfer overwrites the other side; lists the targets it will write. */
+function confirmTransfer(kind: 'upload' | 'download', hostName: string, targets: string[], run: () => Promise<void>): void {
+  const n = targets.length
+  const what = n === 1 ? basename(targets[0]) : `${n} items`
+  const shown = targets.slice(0, 8).join('\n') + (n > 8 ? `\n… and ${n - 8} more` : '')
+  useUi.getState().askConfirm(
+    kind === 'upload'
+      ? { title: `Upload ${what} to ${hostName}?`, description: 'Files on the server are replaced with your local copies. Folders are uploaded with everything inside.', detail: shown, confirm: 'Upload', run }
+      : { title: `Download ${what} from ${hostName}?`, description: 'Your local files are replaced with the server copies. Folders are downloaded with everything inside.', detail: shown, confirm: 'Download', run }
+  )
 }
 
 export async function uploadPath(localPath: string): Promise<void> {
@@ -82,22 +93,30 @@ export async function uploadPath(localPath: string): Promise<void> {
   if (host && remote) await enqueue([{ kind: 'upload', hostId: host.id, localPath, remotePath: remote }])
 }
 
-export function compareSelection(side?: Side): void {
+/** Opens a Sync window for the focused file or folder of a pane. */
+export function syncSelection(side?: Side): void {
   const host = getActiveHost()
   const b = useBrowser.getState()
   const s = side ?? b.activeSide
   const path = b[s].focused ?? [...b[s].selected][0]
-  if (!host || !path) return toast('Select a file to compare', 'neutral')
+  if (!host || !path) return toast('Select a file or folder to sync', 'neutral')
   const entry = Object.values(b[s].entries).flat().find((e) => e.path === path)
-  if (entry?.type === 'dir') return toast('Compare works on files, not folders', 'neutral')
   const cp = counterpart(s, path, b.local.root, b.remote.root)
-  if (!cp) return toast('This file is outside the mapping', 'danger')
-  openCompare({ hostId: host.id, localPath: s === 'local' ? path : cp, remotePath: s === 'remote' ? path : cp })
+  if (!cp) return toast('This path is outside the mapping', 'danger')
+  void invoke('app:openSyncWindow', { hostId: host.id, scope: { localPath: s === 'local' ? path : cp, remotePath: s === 'remote' ? path : cp, isDir: entry?.type === 'dir' } })
 }
 
-export function openCompare(pair: { hostId: string; localPath: string; remotePath: string }): void {
-  useUi.getState().setView('compare')
-  void useCompare.getState().open(pair)
+/** Opens a Sync window over the active host's whole mappings. */
+export function syncAll(): void {
+  const host = getActiveHost()
+  if (!host) return
+  if (!host.mappings.some((m) => m.local.trim() && m.remote.trim())) return toast('Set a deployment path for this host first', 'danger')
+  void invoke('app:openSyncWindow', { hostId: host.id })
+}
+
+/** Opens a Sync window on one file pair. */
+export function openFileSync(pair: { hostId: string; localPath: string; remotePath: string }): void {
+  void invoke('app:openSyncWindow', { hostId: pair.hostId, scope: { localPath: pair.localPath, remotePath: pair.remotePath, isDir: false } })
 }
 
 export async function openSsh(hostId?: string, cwd?: string): Promise<void> {

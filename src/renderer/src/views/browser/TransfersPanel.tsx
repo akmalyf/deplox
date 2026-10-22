@@ -5,8 +5,6 @@ import { basename } from '@shared/paths'
 import { formatBytes, formatClock, formatSpeed } from '@shared/format'
 import { useTransfers, transferRows } from '../../stores/transfers'
 import { useBrowser } from '../../stores/browser'
-import { useSync } from '../../stores/sync'
-import { useUi } from '../../stores/ui'
 import { useApp } from '../../stores/app'
 import { invoke } from '../../lib/ipc'
 
@@ -127,8 +125,6 @@ export function TransfersPanel() {
   const groups = useTransfers((s) => s.groups)
   const log = useTransfers((s) => s.log)
   const hosts = useApp((s) => s.hosts)
-  const pendingSync = useSync((s) => s.items.filter((i) => i.group !== 'done').length)
-  const setView = useUi((s) => s.setView)
 
   const rows = useMemo(() => transferRows(jobs, groups), [jobs, groups])
   const all = Object.values(jobs)
@@ -141,7 +137,7 @@ export function TransfersPanel() {
   const summary = [active && `${active} active`, queued && `${queued} queued`, paused && `${paused} paused`, speed && formatSpeed(speed)].filter(Boolean).join(' · ') || 'Idle'
 
   return (
-    <section aria-label="Transfers" style={{ flex: '0 0 auto', height: open ? 196 : 37, margin: '0 16px 16px', background: 'var(--bg-card)', borderRadius: 10, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <section aria-label="Transfers" style={{ flex: '0 0 auto', height: open ? 196 : 37, margin: '0 12px 12px', background: 'var(--bg-card)', borderRadius: 10, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div role="tablist" style={{ height: 36, flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 4, padding: '0 8px', borderBottom: '1px solid var(--line)' }}>
         <PaneTab icon="git-branch" active={tab === 'transfers'} closable={false} onSelect={() => (setTab('transfers'), setOpen(true))}>
           Transfers
@@ -163,9 +159,6 @@ export function TransfersPanel() {
         <Button variant="ghost" size="sm" onClick={() => void invoke('transfers:clearDone')}>
           Clear completed
         </Button>
-        <button type="button" className="q-link" onClick={() => setView('sync')}>
-          View queue{pendingSync ? ` · ${pendingSync}` : ''}
-        </button>
         <Button variant="ghost" size="sm" icon={open ? 'chevron-down' : 'chevron-up'} iconOnly onClick={() => setOpen(!open)}>
           {open ? 'Collapse transfers' : 'Expand transfers'}
         </Button>
@@ -176,7 +169,7 @@ export function TransfersPanel() {
             rows.length ? (
               rows.map((r) => (r.isGroup ? <GroupRow key={r.id} g={r.group!} speed={groupSpeed(r.id)} /> : <JobRow key={r.id} j={r.job!} hostName={hostName(r.job!.hostId)} />))
             ) : (
-              <div style={{ padding: '12px 16px', color: 'var(--ink-subtle)' }}>No transfers yet. Select files and use » to upload or « to download.</div>
+              <div style={{ padding: '12px 16px', color: 'var(--ink-subtle)' }}>No transfers yet. Right-click a file to upload, download or sync it.</div>
             )
           ) : log.length ? (
             [...log].reverse().map((e, i) => (

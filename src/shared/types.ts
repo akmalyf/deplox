@@ -268,6 +268,39 @@ export interface SyncItem {
   updatedAt: number
 }
 
+/** How a file differs between the local mapping and the server, judged against the last sync. */
+export type SyncStatus = 'local-changed' | 'remote-changed' | 'conflict' | 'local-only' | 'remote-only'
+export type SyncAction = 'upload' | 'download' | 'skip'
+
+export interface SyncDiff {
+  /** Path relative to its mapping root, forward slashes. */
+  relPath: string
+  localPath: string
+  remotePath: string
+  status: SyncStatus
+  local: { size: number; mtime: number } | null
+  remote: { size: number; mtime: number } | null
+  /** Suggested action: follows the sync history; conflicts and one-sided files wait for the user. */
+  action: SyncAction
+}
+
+export interface SyncCompareRequest {
+  hostId: string
+  /** Limits the comparison to one file or folder; the host's whole mappings when absent. */
+  scope?: { localPath: string; remotePath: string; isDir: boolean }
+}
+
+/** What a Sync window compares: a host's whole mappings, or one file or folder. */
+export interface SyncWindowRequest {
+  hostId: string
+  scope?: SyncCompareRequest['scope']
+}
+
+export interface SyncApplyRequest {
+  hostId: string
+  items: { localPath: string; remotePath: string; action: 'upload' | 'download' }[]
+}
+
 /* ---------- App state snapshot ---------- */
 
 export interface AppState {

@@ -14,11 +14,13 @@ import { useTerminal } from './stores/terminal'
 import { useSync } from './stores/sync'
 import { installKeymap } from './lib/keymap'
 import { applyTheme } from './lib/theme'
+import { syncRoute } from './lib/route'
 
 // Platform class for chrome that depends on native window controls.
 document.documentElement.classList.toggle('mac', window.deplox.platform === 'darwin')
 bindEvents()
-installKeymap()
+// App shortcuts drive the main window's views; a Sync window has its own keys.
+if (!syncRoute) installKeymap()
 
 void window.deplox.invoke('app:getState').then((s) => {
   applyTheme(s.settings)

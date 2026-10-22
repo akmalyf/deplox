@@ -204,22 +204,21 @@ export class ConnectionManager extends EventEmitter {
     for (const id of this.conns.keys()) await this.disconnect(id)
   }
 
-  /** Open a throwaway connection to validate settings. */
-  async test(host: StoredHost, secret: string | null): Promise<{ serverVersion?: string; latencyMs: number }> {
+  /** A throwaway connection outside the managed pool (testing a host, browsing it before it is saved). The caller closes it. */
+  async openTemp(host: StoredHost, secret: string | null): Promise<{ fs: RemoteFs; serverVersion?: string }> {
     if (host.protocol === 'sftp') {
       const { client, sftp, info } = await this.openSsh(host, { interactive: true }, secret ?? undefined)
-      const fs = new SftpFs(client, sftp)
-      try {
-        const latencyMs = await fs.ping()
-        return { serverVersion: info.serverVersion, latencyMs }
-      } finally {
-        await fs.close()
-      }
+      return { fs: new SftpFs(client, sftp), serverVersion: info.serverVersion }
     }
     const fs = await this.openFtp(host, { interactive: true }, secret ?? undefined)
+    return { fs, serverVersion: fs.welcome }
+  }
+
+  async test(host: StoredHost, secret: string | null): Promise<{ serverVersion?: string; latencyMs: number }> {
+    const { fs, serverVersion } = await this.openTemp(host, secret)
     try {
       const latencyMs = await fs.ping()
-      return { serverVersion: fs.welcome, latencyMs }
+      return { serverVersion, latencyMs }
     } finally {
       await fs.close()
     }

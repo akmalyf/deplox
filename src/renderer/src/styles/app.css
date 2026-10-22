@@ -21,9 +21,18 @@ a:hover { color: var(--accent-hover); }
 .sb-top-mac { padding-left: 80px; }
 .sidebar-collapsed .ad-sidebar { display: none; }
 
+/* Main panel fills its row so the settings column centers instead of hugging the left */
+.ad-main { flex: 1 1 auto; min-width: 0; }
+/* Settings-style pages (Settings, host form): same compact rhythm as the card views — 12px edges, 8px between cards */
+.ad-main-settings .ad-main-scroll { padding: 12px; }
+.ad-main-settings .ad-main-column { gap: 16px; }
+.ad-main-settings .ad-section-label { margin-bottom: 0; }
+
 /* Project switcher */
 .proj-switch{font:inherit;font-weight:500;display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 8px 0 4px;border:0;border-radius:6px;background:transparent;color:var(--ink);cursor:pointer;transition:background-color 120ms ease-out;white-space:nowrap}
 .proj-switch:hover,.proj-switch[aria-expanded="true"]{background:var(--bg-control)}
+.proj-switch-sidebar{display:flex;width:100%;height:36px;padding:0 8px 0 6px}
+.proj-switch-sidebar > .ell{flex:1 1 auto;min-width:0;text-align:left}
 .proj-switch:focus-visible{outline:2px solid var(--line-focus);outline-offset:2px}
 .proj-avatar{width:22px;height:22px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#ffffff;letter-spacing:0.02em;flex:0 0 auto}
 .proj-row{font:inherit;display:flex;align-items:center;gap:10px;width:100%;height:44px;padding:0 8px;border:0;border-radius:6px;background:transparent;color:var(--ink);text-align:left;cursor:pointer}
@@ -49,8 +58,6 @@ a:hover { color: var(--accent-hover); }
 
 /* Header + footer */
 .app-header{height:44px;flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--line);color:var(--ink-muted);min-width:0}
-.app-footer{height:26px;flex:0 0 auto;display:flex;align-items:center;gap:16px;padding:0 16px;border-top:1px solid var(--line);font-size:11px;line-height:14px;color:var(--ink-subtle);white-space:nowrap;overflow:hidden}
-.app-footer > span{overflow:hidden;text-overflow:ellipsis}
 .main-col{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;background:var(--bg)}
 .spacer{flex:1 1 auto}
 .muted{color:var(--ink-muted)}
@@ -63,17 +70,13 @@ a:hover { color: var(--accent-hover); }
 /* Danger + toast buttons */
 .btn-danger{font:inherit;font-weight:500;height:28px;padding:0 12px;border-radius:6px;border:1px solid var(--danger);background:transparent;color:var(--danger);cursor:pointer;transition:background-color 120ms ease-out}
 .btn-danger:hover{background:var(--bg-control)}
-.btn-danger:focus-visible,.toast-btn:focus-visible,.xfer:focus-visible,.pal-trigger:focus-visible,.pal-row:focus-visible,.q-link:focus-visible{outline:2px solid var(--line-focus);outline-offset:2px}
+.btn-danger:focus-visible,.toast-btn:focus-visible,.pal-trigger:focus-visible,.pal-row:focus-visible{outline:2px solid var(--line-focus);outline-offset:2px}
 .toast-btn{font:inherit;font-weight:600;display:inline-flex;align-items:center;justify-content:center;height:24px;min-width:24px;padding:0 8px;border:0;border-radius:6px;background:transparent;color:var(--on-fill-inverse);cursor:pointer}
 .toast-btn:hover{opacity:0.75}
 .toast{position:absolute;left:50%;transform:translateX(-50%);bottom:56px;z-index:150;display:flex;align-items:center;gap:8px;padding:6px 6px 6px 14px;background:var(--fill-inverse);color:var(--on-fill-inverse);border-radius:10px;box-shadow:var(--shadow-popover);max-width:min(720px,80%)}
 .toast-danger{background:var(--danger);color:#fff}
 .toast-danger .toast-btn{color:#fff}
 
-/* Transfer arrows between panes */
-.xfer{font:inherit;font-size:15px;line-height:16px;width:32px;height:32px;padding:0;border:0;border-radius:6px;background:var(--bg-control);color:var(--ink);cursor:pointer;transition:background-color 120ms ease-out}
-.xfer:hover:not(:disabled){background:var(--bg-control-hover)}
-.xfer:disabled{opacity:var(--opacity-disabled);cursor:default}
 
 /* Command palette */
 .pal-trigger{font:inherit;display:inline-flex;align-items:center;gap:8px;height:28px;width:220px;padding:0 6px 0 10px;border:1px solid var(--line-strong);border-radius:6px;background:var(--bg-raised);color:var(--ink-subtle);cursor:pointer;text-align:left;flex:0 1 220px;min-width:120px}
@@ -84,8 +87,6 @@ a:hover { color: var(--accent-hover); }
 .pal-row:hover,.pal-row-active{background:var(--bg-selected)}
 .pal-row .ad-icon{color:var(--ink-muted)}
 
-.q-link{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border:0;border-radius:6px;font:inherit;font-size:12px;color:var(--ink-muted);text-decoration:none;background:transparent;cursor:pointer}
-.q-link:hover{background:var(--bg-control);color:var(--ink)}
 
 /* Forms */
 .field{font:inherit;height:28px;padding:0 12px;border:1px solid var(--line-strong);border-radius:6px;background:var(--bg-raised);color:var(--ink);box-sizing:border-box;outline:0;min-width:0}
@@ -100,32 +101,70 @@ a:hover { color: var(--accent-hover); }
 .dialog{width:460px;max-width:calc(100% - 32px);box-sizing:border-box;background:var(--bg-popover);border-radius:14px;box-shadow:var(--shadow-popover);padding:20px;display:flex;flex-direction:column;gap:12px}
 .dialog h2{margin:0;font-size:17px;line-height:22px;font-weight:600;letter-spacing:-0.01em}
 .dialog p{margin:0;color:var(--ink-muted)}
+/* Under the app-level scrims so a host-key or password prompt raised while it connects stays on top */
+.scrim-under{position:fixed;z-index:190}
+.rpick-list{height:300px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:4px}
+.rpick-row{font:inherit;display:flex;align-items:center;gap:8px;width:100%;height:30px;padding:0 8px;border:0;border-radius:6px;background:transparent;color:var(--ink);text-align:left;cursor:pointer}
+.rpick-row:hover:not(:disabled){background:var(--bg-selected)}
+.rpick-row:focus-visible{outline:2px solid var(--line-focus);outline-offset:-2px}
+.rpick-note{display:flex;align-items:center;gap:8px;padding:8px;font-size:12px;color:var(--ink-subtle)}
 .dialog-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:4px}
 .code-box{background:var(--bg-card);border-radius:10px;padding:10px 12px;font-family:var(--font-mono);font-size:12px;line-height:16px;overflow-wrap:anywhere}
 .check{display:flex;align-items:center;gap:8px;color:var(--ink-muted);cursor:pointer}
-.check input,.line-check,.q-check{width:13px;height:13px;margin:0;accent-color:var(--accent);cursor:pointer}
-.line-check:focus-visible,.q-check:focus-visible,.q-open:focus-visible,.line-act:focus-visible{outline:2px solid var(--line-focus);outline-offset:2px}
+.check input{width:13px;height:13px;margin:0;accent-color:var(--accent);cursor:pointer}
+.line-act:focus-visible{outline:2px solid var(--line-focus);outline-offset:2px}
+
+/* Square chips already sit on --bg-control, so the selected state needs its own look */
+.ad-chip-square.ad-chip-selected{background:var(--bg-accent-tint);border-color:var(--accent);color:var(--accent)}
 
 /* Compare */
-.check-hit{display:inline-flex;align-items:center;justify-content:center;width:24px;height:22px;cursor:pointer}
-.line-act{font:inherit;font-family:var(--font-sans);font-size:14px;line-height:16px;width:22px;height:22px;padding:0;border:0;border-radius:4px;background:transparent;color:var(--accent);cursor:pointer}
+.line-act{font:inherit;font-family:var(--font-sans);font-size:19px;line-height:20px;font-weight:600;width:22px;height:22px;padding:0;border:0;border-radius:4px;background:transparent;color:var(--accent);cursor:pointer}
 .line-act:hover{background:var(--bg-control-hover);color:var(--accent-hover)}
-.cmp-row{display:grid;grid-template-columns:minmax(0,1fr) 150px minmax(0,1fr);height:22px}
+.cmp-row{display:grid;grid-template-columns:minmax(0,1fr) 128px minmax(0,1fr);height:22px}
 .cmp-row-cursor .cmp-gutter{box-shadow:inset 2px 0 0 var(--accent)}
 .cmp-code{padding:0 12px;white-space:pre;overflow:hidden}
-.cmp-gutter{display:grid;grid-template-columns:40px 70px 40px;align-items:center;border-left:1px solid var(--code-guide);border-right:1px solid var(--code-guide);color:var(--code-gutter);user-select:none}
+.cmp-gutter{display:grid;grid-template-columns:40px 48px 40px;align-items:center;border-left:1px solid var(--code-guide);border-right:1px solid var(--code-guide);color:var(--code-gutter);user-select:none}
 
-/* Sync queue */
-.q-row{display:grid;grid-template-columns:20px 120px minmax(0,1fr) 150px 220px 92px;gap:12px;align-items:center;min-height:48px;padding:0 12px 0 16px;border-top:1px solid var(--line);transition:background-color 120ms ease-out}
-.q-row:hover{background:var(--bg-selected)}
-.q-row-active,.q-row-active:hover{background:var(--bg-selected);box-shadow:inset 2px 0 0 var(--accent)}
-.q-open{font:inherit;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;padding:4px 0;border:0;background:transparent;color:var(--ink);text-align:left;cursor:pointer}
-.q-dim{color:var(--ink-subtle)}
-.q-mono{font-family:var(--font-mono);font-size:12px;line-height:16px}
-.q-ell{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.q-head{display:grid;grid-template-columns:20px 120px minmax(0,1fr) 150px 220px 92px;gap:12px;align-items:center;height:32px;padding:0 12px 0 16px;font-size:12px;line-height:16px;color:var(--ink-subtle)}
-.q-btn{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border:0;border-radius:6px;font:inherit;font-size:12px;font-weight:500;background:var(--bg-control);color:var(--ink);cursor:pointer}
-.q-btn:hover{background:var(--bg-control-hover)}
+/* Sync window */
+.sync-window{position:relative;flex:1 1 auto;min-width:0;height:100%;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+.sync-dialog{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.sync-window-mac .sync-head{padding-left:84px}
+.sync-head{height:48px;flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid var(--line)}
+.sync-roots{flex:0 0 auto;display:grid;grid-template-columns:minmax(0,1fr) 36px minmax(0,1fr);gap:0;margin:8px 12px}
+.sync-root{min-width:0;height:30px;display:flex;align-items:center;gap:8px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg-card);font-size:12px;color:var(--ink-muted)}
+.sync-root .ell{font-family:var(--font-mono)}
+.sync-list-head,.sync-row{display:grid;grid-template-columns:minmax(0,1fr) 84px 124px 36px 124px 84px minmax(0,1fr);align-items:center}
+.sync-list-head > *,.sync-cell{min-width:0;height:100%;display:flex;align-items:center;padding:0 8px;border-right:1px solid var(--line);box-sizing:border-box}
+.sync-list-head > :last-child,.sync-cell:last-child{border-right:0}
+.sync-list-head > .num,.sync-cell.num{justify-content:flex-end}
+.sync-name{gap:6px}
+.sync-name .ad-icon,.sync-name svg{flex:0 0 auto;opacity:0.8}
+.sync-row .sync-act,.sync-list-head .sync-act{justify-self:center;border-right:0}
+.sync-row > .sync-act + .sync-cell,.sync-list-head > .sync-act + span{border-left:1px solid var(--line)}
+.sync-list-head{height:28px;position:sticky;top:0;z-index:1;background:var(--bg-card);border-bottom:1px solid var(--line);box-sizing:border-box;font-size:12px;color:var(--ink-subtle)}
+.sync-list{flex:0 0 32%;min-height:120px;overflow-y:auto;margin:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg-card)}
+.sync-list:focus-visible{outline:2px solid var(--line-focus);outline-offset:1px}
+.sync-row{height:24px}
+.sync-row:hover{background:var(--bg-control)}
+.sync-row-active,.sync-row-active:hover{background:var(--bg-selected)}
+.sync-row-skip .sync-path{opacity:0.6}
+.sync-act{font:inherit;font-size:16px;font-weight:600;width:28px;height:22px;padding:0;border:0;border-radius:5px;background:transparent;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.sync-act:hover:not(:disabled){background:var(--bg-control-hover)}
+.sync-act:focus-visible{outline:2px solid var(--line-focus);outline-offset:-2px}
+.sync-act-upload{color:var(--accent)}
+.sync-act-download{color:var(--success-text)}
+.sync-act-mixed{color:var(--ink-muted)}
+.sync-act-skip,.sync-act:disabled{color:var(--ink-subtle);cursor:default}
+.sync-path-local-changed{color:var(--accent)}
+.sync-path-remote-changed{color:var(--warning)}
+.sync-path-conflict{color:var(--danger)}
+.sync-path-local-only{color:var(--success-text)}
+.sync-path-remote-only{color:var(--ink-muted)}
+.sync-path-synced{color:var(--ink-subtle)}
+.sync-meta{font-size:12px;color:var(--ink-subtle);font-variant-numeric:tabular-nums}
+.sync-note{display:flex;align-items:center;gap:8px;padding:12px;font-size:12px;color:var(--ink-subtle)}
+.sync-split{height:8px;flex:0 0 auto}
+.sync-foot{height:52px;flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:0 12px;border-top:1px solid var(--line)}
 
 /* States */
 .sk{height:10px;border-radius:4px;background:var(--bg-control)}
@@ -138,8 +177,13 @@ a:hover { color: var(--accent-hover); }
 .xterm-host{position:absolute;inset:0;padding:8px 4px 4px 12px}
 .xterm-host .xterm{height:100%}
 .xterm .xterm-viewport{background-color:transparent !important}
-.xterm .xterm-viewport::-webkit-scrollbar{width:8px}
-.xterm .xterm-viewport::-webkit-scrollbar-thumb{background:var(--bg-control-hover);border-radius:4px}
+/* xterm 6 re-reveals its scrollbar on every render (cursor blink included) and fades it out again,
+   so it blinks constantly. Ignore its own visibility and show it only while the user scrolls (XtermPane toggles .xterm-scrolling). */
+.xterm-host .xterm .xterm-scrollable-element > .scrollbar{opacity:0;pointer-events:none;transition:opacity 300ms ease-out}
+.xterm-host.xterm-scrolling .xterm .xterm-scrollable-element > .scrollbar{opacity:1;pointer-events:auto;transition:opacity 100ms ease-out}
+/* Same shape as the app's thin scrollbars: 10px track, 6px rounded thumb (colors come from the xterm theme). xterm sizes these inline. */
+.xterm-host .xterm .xterm-scrollable-element > .scrollbar.vertical{width:10px !important}
+.xterm-host .xterm .xterm-scrollable-element > .scrollbar.vertical > .slider{width:6px !important;left:2px !important;border-radius:6px}
 
 /* Thin scrollbars */
 ::-webkit-scrollbar{width:10px;height:10px}

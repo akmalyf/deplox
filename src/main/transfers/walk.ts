@@ -40,6 +40,9 @@ export async function walkLocal(root: string, isExcluded: (absPath: string, isDi
   return out
 }
 
+/** Directory listings in flight at once. SFTP pipelines them over one channel; FTP queues them on its control connection. */
+const REMOTE_LIST_CONCURRENCY = 8
+
 export async function walkRemote(fs: RemoteFs, root: string, isExcluded: (absPath: string, isDir: boolean) => boolean): Promise<WalkResult> {
   const out: WalkResult = { dirs: [{ path: root, depth: 0 }], files: [], skipped: 0 }
   let level: string[] = [root]
@@ -47,8 +50,18 @@ export async function walkRemote(fs: RemoteFs, root: string, isExcluded: (absPat
   while (level.length) {
     const next: string[] = []
     depth++
-    for (const dir of level) {
-      for (const e of await fs.list(dir)) {
+    // One round trip per folder adds up fast on a remote link, so a level's folders are listed in parallel.
+    const listings: Awaited<ReturnType<RemoteFs['list']>>[] = new Array(level.length)
+    let cursor = 0
+    const worker = async () => {
+      while (cursor < level.length) {
+        const i = cursor++
+        listings[i] = await fs.list(level[i])
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(REMOTE_LIST_CONCURRENCY, level.length) }, worker))
+    for (const entries of listings) {
+      for (const e of entries) {
         if (e.type === 'symlink') {
           out.skipped++
           continue

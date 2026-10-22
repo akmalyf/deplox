@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { PromptRequest } from '@shared/types'
 
-export type View = 'browser' | 'compare' | 'terminal' | 'sync' | 'host' | 'settings' | 'welcome'
+export type View = 'browser' | 'terminal' | 'host' | 'settings' | 'welcome'
 
 export interface Toast {
   id: number

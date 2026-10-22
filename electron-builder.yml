@@ -17,7 +17,7 @@ mac:
   identity: '-'
   # Hardened runtime only matters for notarization, and with an ad-hoc identity it blocks loading node-pty.
   hardenedRuntime: false
-  target: [dmg, zip]
+  target: [dmg]
 win:
   target: [nsis]
 linux:

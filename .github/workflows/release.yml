@@ -92,4 +92,6 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: Deplox ${{ steps.version.outputs.tag }}
           generate_release_notes: true
-          files: dist/*
+          # Artifacts keep their release/<version>/ folder, so match recursively.
+          files: dist/**/*
+          fail_on_unmatched_files: true
